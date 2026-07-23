@@ -19,8 +19,8 @@ from .tenant_schemas import (
     TenantCreate, TenantUpdate, TenantResponse, TenantListResponse
 )
 from .dict_schemas import (
-    DictItemCreate, DictItemUpdate, DictItemResponse,
-    DictListResponse
+    DictTypeCreate, DictTypeUpdate, DictTypeResponse, DictTypeListResponse,
+    DictItemCreate, DictItemUpdate, DictItemResponse, DictItemListResponse
 )
 from .log_schemas import (
     LoginLogResponse, LoginLogListResponse,
@@ -42,7 +42,8 @@ __all__ = [
     # Tenant Schemas
     'TenantCreate', 'TenantUpdate', 'TenantResponse', 'TenantListResponse',
     # Dict Schemas
-    'DictItemCreate', 'DictItemUpdate', 'DictItemResponse', 'DictListResponse',
+    'DictTypeCreate', 'DictTypeUpdate', 'DictTypeResponse', 'DictTypeListResponse',
+    'DictItemCreate', 'DictItemUpdate', 'DictItemResponse', 'DictItemListResponse',
     # Log Schemas
     'LoginLogResponse', 'LoginLogListResponse',
     'OperationLogResponse', 'OperationLogListResponse'

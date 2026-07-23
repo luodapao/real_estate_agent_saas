@@ -68,3 +68,19 @@ class DictItemResponse(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
     created_at: Optional[datetime] = Field(None, description="创建时间")
     updated_at: Optional[datetime] = Field(None, description="更新时间")
+
+
+class DictItemListResponse(BaseModel):
+    """字典项列表响应模型"""
+    total: int = Field(..., description="总数")
+    page: int = Field(..., description="页码")
+    size: int = Field(..., description="每页数量")
+    data: List[DictItemResponse] = Field(..., description="字典项列表")
+
+
+class DictTypeListResponse(BaseModel):
+    """字典类型列表响应模型"""
+    total: int = Field(..., description="总数")
+    page: int = Field(..., description="页码")
+    size: int = Field(..., description="每页数量")
+    data: List[DictTypeResponse] = Field(..., description="字典类型列表")
