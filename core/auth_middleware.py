@@ -3,7 +3,7 @@
 """
 from datetime import datetime
 from fastapi import Request
-from config.settings import WHITE_LIST
+from config.settings import WHITE_LIST, WHITE_LIST_PREFIX
 from config.constants import USER_STATUS, REDIS_KEY
 from config.exception import (
     AuthException, TokenExpiredException, TokenInvalidException,
@@ -24,6 +24,11 @@ async def auth_middleware(request: Request, call_next):
     # 白名单接口直接放行
     if path in WHITE_LIST:
         return await call_next(request)
+    
+    # 白名单前缀路径直接放行（如 /docs/xxx, /redoc/xxx, /static/xxx）
+    for prefix in WHITE_LIST_PREFIX:
+        if path.startswith(prefix):
+            return await call_next(request)
     
     # 获取Token
     access_token = request.headers.get('Authorization')

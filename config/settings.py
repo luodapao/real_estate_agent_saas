@@ -71,7 +71,19 @@ WHITE_LIST = [
     '/api/admin/login',
     '/api/admin/refresh_token',
     '/api/admin/reset_pwd',
-    '/api/admin/send_verify_code'
+    '/api/admin/send_verify_code',
+    # 文档页面
+    '/docs',
+    '/redoc',
+    '/openapi.json',
+    '/favicon.ico'
+]
+
+# 允许放行的路径前缀（不需要鉴权）
+WHITE_LIST_PREFIX = [
+    '/docs/',
+    '/redoc/',
+    '/static/'
 ]
 
 # 应用运行配置
