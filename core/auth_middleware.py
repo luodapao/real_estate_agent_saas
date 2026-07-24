@@ -18,12 +18,28 @@ from admin.dao.token_dao import TokenDAO
 async def auth_middleware(request: Request, call_next):
     """全局鉴权中间件"""
     
-    # 获取请求路径
+    # 获取请求路径和方法
     path = request.url.path
+    method = request.method
     
-    # 白名单接口直接放行
-    if path in WHITE_LIST:
-        return await call_next(request)
+    # 白名单接口直接放行（支持路径+方法匹配）
+    for white_item in WHITE_LIST:
+        white_path = white_item['path']
+        white_methods = white_item.get('methods', ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
+        exact_match = white_item.get('exact', True)
+        
+        # 路径匹配
+        path_matched = False
+        if exact_match:
+            path_matched = path == white_path
+        else:
+            path_matched = path.startswith(white_path)
+        
+        # 方法匹配
+        method_matched = method.upper() in [m.upper() for m in white_methods]
+        
+        if path_matched and method_matched:
+            return await call_next(request)
     
     # 白名单前缀路径直接放行（如 /docs/xxx, /redoc/xxx, /static/xxx）
     for prefix in WHITE_LIST_PREFIX:

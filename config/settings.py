@@ -67,16 +67,20 @@ REDIS_EXPIRE = {
 }
 
 # 允许放行的接口（不需要鉴权）
+# 格式: {'path': 路径, 'methods': [HTTP方法列表], 'exact': 是否精确匹配}
 WHITE_LIST = [
-    '/api/admin/login',
-    '/api/admin/refresh_token',
-    '/api/admin/reset_pwd',
-    '/api/admin/send_verify_code',
-    # 文档页面
-    '/docs',
-    '/redoc',
-    '/openapi.json',
-    '/favicon.ico'
+    # 认证相关（公开接口）
+    {'path': '/api/admin/login', 'methods': ['POST'], 'exact': True},
+    {'path': '/api/admin/refresh-token', 'methods': ['POST'], 'exact': True},
+    {'path': '/api/admin/reset_pwd', 'methods': ['POST'], 'exact': True},
+    {'path': '/api/admin/send_verify_code', 'methods': ['POST'], 'exact': True},
+    # 用户注册（公开接口，仅POST）
+    {'path': '/api/admin/user', 'methods': ['POST'], 'exact': True},
+    # 文档页面（不限制方法）
+    {'path': '/docs', 'methods': ['GET', 'HEAD'], 'exact': True},
+    {'path': '/redoc', 'methods': ['GET', 'HEAD'], 'exact': True},
+    {'path': '/openapi.json', 'methods': ['GET', 'HEAD'], 'exact': True},
+    {'path': '/favicon.ico', 'methods': ['GET', 'HEAD'], 'exact': True}
 ]
 
 # 允许放行的路径前缀（不需要鉴权）
