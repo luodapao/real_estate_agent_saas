@@ -28,10 +28,11 @@ async def auth_middleware(request: Request, call_next):
         white_methods = white_item.get('methods', ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
         exact_match = white_item.get('exact', True)
         
-        # 路径匹配
+        # 路径匹配（同时处理带/不带末尾斜杠的情况）
         path_matched = False
         if exact_match:
-            path_matched = path == white_path
+            # 精确匹配：支持 path == white_path 或 path == white_path + '/'
+            path_matched = path == white_path or path == white_path + '/'
         else:
             path_matched = path.startswith(white_path)
         
