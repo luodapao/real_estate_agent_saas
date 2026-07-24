@@ -41,16 +41,21 @@ async def get_user_list(request: Request, user_name: Optional[str] = None,
 
 @router.post("/", summary="创建用户", response_model=UserResponse)
 async def create_user(request: Request, data: UserCreate, db: Session = Depends(get_db)):
-    """创建用户接口"""
+    """创建用户接口（支持公开注册和管理员创建）"""
     try:
         user_info = request.state.user_info
-        result = UserService.create_user(db, user_info['tenant_id'], data)
         
-        # 记录操作日志
-        LogService.add_operation_log(db, user_info['tenant_id'], user_info['user_id'], 
-                                    user_info['login_name'], "系统管理", "POST", 
-                                    "/api/admin/user", str(data.model_dump()), 1, 
-                                    "创建用户成功", request.client.host if request.client else "unknown")
+        # 获取租户ID（公开注册时使用默认租户ID 1）
+        tenant_id = user_info['tenant_id'] or 1
+        
+        result = UserService.create_user(db, tenant_id, data)
+        
+        # 只有登录用户创建时才记录操作日志
+        if user_info['user_id']:
+            LogService.add_operation_log(db, tenant_id, user_info['user_id'], 
+                                        user_info['login_name'], "系统管理", "POST", 
+                                        "/api/admin/user", str(data.model_dump()), 1, 
+                                        "创建用户成功", request.client.host if request.client else "unknown")
         
         return success_response(data=result, message="创建成功")
     except Exception as e:

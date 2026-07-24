@@ -40,11 +40,31 @@ async def auth_middleware(request: Request, call_next):
         method_matched = method.upper() in [m.upper() for m in white_methods]
         
         if path_matched and method_matched:
+            # 白名单接口：初始化必要属性，避免后续代码访问不存在的属性
+            request.state.user = None
+            request.state.token = None
+            request.state.permissions = []
+            request.state.user_info = {
+                'user_id': None,
+                'tenant_id': None,
+                'login_name': None,
+                'user_name': None
+            }
             return await call_next(request)
     
     # 白名单前缀路径直接放行（如 /docs/xxx, /redoc/xxx, /static/xxx）
     for prefix in WHITE_LIST_PREFIX:
         if path.startswith(prefix):
+            # 白名单前缀接口：初始化必要属性
+            request.state.user = None
+            request.state.token = None
+            request.state.permissions = []
+            request.state.user_info = {
+                'user_id': None,
+                'tenant_id': None,
+                'login_name': None,
+                'user_name': None
+            }
             return await call_next(request)
     
     # 获取Token
