@@ -2,7 +2,7 @@
 房地产SaaS销售管理系统 - 数据统计报表模块数据模型
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -10,7 +10,7 @@ from decimal import Decimal
 
 # ========== 项目总览统计模型 ==========
 
-class OverviewStatisticsResponse(BaseModel):
+class OverviewStatisticsResponse(ORMBaseModel):
     """项目总览统计响应模型"""
     project_id: int
     project_name: str
@@ -42,7 +42,7 @@ class TotalStatistics(BaseModel):
 
 # ========== 项目维度统计模型 ==========
 
-class ProjectStatisticsResponse(BaseModel):
+class ProjectStatisticsResponse(ORMBaseModel):
     """项目维度统计响应模型"""
     project_id: int
     project_name: str
@@ -63,7 +63,7 @@ class ProjectStatisticsResponse(BaseModel):
 
 # ========== 个人维度统计模型 ==========
 
-class PersonalStatisticsResponse(BaseModel):
+class PersonalStatisticsResponse(ORMBaseModel):
     """个人维度统计响应模型"""
     user_id: int
     user_name: str
@@ -84,7 +84,7 @@ class PersonalStatisticsResponse(BaseModel):
 
 # ========== 团队维度统计模型 ==========
 
-class TeamStatisticsResponse(BaseModel):
+class TeamStatisticsResponse(ORMBaseModel):
     """团队维度统计响应模型"""
     team_id: int
     team_name: str
@@ -105,7 +105,7 @@ class TeamStatisticsResponse(BaseModel):
 
 # ========== 渠道维度统计模型 ==========
 
-class ChannelStatisticsResponse(BaseModel):
+class ChannelStatisticsResponse(ORMBaseModel):
     """渠道维度统计响应模型"""
     channel_id: int
     channel_name: str
@@ -132,7 +132,7 @@ class CustomStatisticsRequest(BaseModel):
     end_date: str = Field(..., description="结束日期（YYYY-MM-DD）")
 
 
-class CustomStatisticsResponse(BaseModel):
+class CustomStatisticsResponse(ORMBaseModel):
     """自定义时段统计响应模型"""
     project_id: int
     project_name: str
@@ -158,7 +158,7 @@ class TimeRangeConfig(BaseModel):
 
 # ========== 统计报表综合响应模型 ==========
 
-class StatisticsReportResponse(BaseModel):
+class StatisticsReportResponse(ORMBaseModel):
     """统计报表综合响应模型"""
     project_id: int
     project_name: str
@@ -190,7 +190,7 @@ class ChartData(BaseModel):
 
 # ========== 销售漏斗模型 ==========
 
-class SalesFunnelResponse(BaseModel):
+class SalesFunnelResponse(ORMBaseModel):
     """销售漏斗响应模型"""
     project_id: int
     project_name: str
@@ -212,7 +212,7 @@ class FunnelStage(BaseModel):
 
 # ========== 客户转化分析模型 ==========
 
-class CustomerConversionResponse(BaseModel):
+class CustomerConversionResponse(ORMBaseModel):
     """客户转化分析响应模型"""
     project_id: int
     project_name: str
@@ -231,7 +231,7 @@ class CustomerConversionResponse(BaseModel):
 
 # ========== 回款分析模型 ==========
 
-class PaymentAnalysisResponse(BaseModel):
+class PaymentAnalysisResponse(ORMBaseModel):
     """回款分析响应模型"""
     project_id: int
     project_name: str
@@ -257,7 +257,7 @@ class PaymentTrend(BaseModel):
 
 # ========== 房源销控统计模型 ==========
 
-class HouseControlStatisticsResponse(BaseModel):
+class HouseControlStatisticsResponse(ORMBaseModel):
     """房源销控统计响应模型"""
     project_id: int
     project_name: str
@@ -292,7 +292,7 @@ class RoomTypeDistribution(BaseModel):
 
 # ========== 渠道业绩排行模型 ==========
 
-class ChannelPerformanceRankingResponse(BaseModel):
+class ChannelPerformanceRankingResponse(ORMBaseModel):
     """渠道业绩排行响应模型"""
     project_id: int
     project_name: str

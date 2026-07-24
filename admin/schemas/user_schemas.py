@@ -6,6 +6,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from common.schemas.response import ORMBaseModel
 
 
 # ========== 登录模型 ==========
@@ -16,7 +17,7 @@ class LoginRequest(BaseModel):
     password: str = Field(..., description="密码", max_length=100)
 
 
-class LoginResponse(BaseModel):
+class LoginResponse(ORMBaseModel):
     """登录响应模型"""
     access_token: str = Field(..., description="访问令牌")
     refresh_token: str = Field(..., description="刷新令牌")
@@ -53,7 +54,7 @@ class UserUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class UserResponse(BaseModel):
+class UserResponse(ORMBaseModel):
     """用户响应模型"""
     user_id: int = Field(..., description="用户ID")
     tenant_id: int = Field(..., description="租户ID")
@@ -70,7 +71,7 @@ class UserResponse(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="更新时间")
 
 
-class UserDetailResponse(BaseModel):
+class UserDetailResponse(ORMBaseModel):
     """用户详情响应模型"""
     user_id: int = Field(..., description="用户ID")
     tenant_id: int = Field(..., description="租户ID")
@@ -89,7 +90,7 @@ class UserDetailResponse(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="更新时间")
 
 
-class UserListResponse(BaseModel):
+class UserListResponse(ORMBaseModel):
     """用户列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")

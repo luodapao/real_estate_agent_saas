@@ -2,7 +2,7 @@
 房地产SaaS销售管理系统 - 分销渠道与佣金模块数据模型
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -39,7 +39,7 @@ class ChannelUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class ChannelResponse(BaseModel):
+class ChannelResponse(ORMBaseModel):
     """渠道公司响应模型"""
     channel_id: int
     channel_code: str
@@ -89,7 +89,7 @@ class BrokerUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class BrokerResponse(BaseModel):
+class BrokerResponse(ORMBaseModel):
     """经纪人响应模型"""
     broker_id: int
     channel_id: int
@@ -137,7 +137,7 @@ class CommissionRuleUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class CommissionRuleResponse(BaseModel):
+class CommissionRuleResponse(ORMBaseModel):
     """佣金规则响应模型"""
     rule_id: int
     project_id: Optional[int]
@@ -158,7 +158,7 @@ class CommissionRuleResponse(BaseModel):
 
 # ========== 佣金结算管理模型 ==========
 
-class CommissionBillResponse(BaseModel):
+class CommissionBillResponse(ORMBaseModel):
     """佣金结算单响应模型"""
     bill_id: int
     bill_no: str
@@ -182,7 +182,7 @@ class CommissionBillResponse(BaseModel):
     update_time: Optional[datetime]
 
 
-class CommissionBillListResponse(BaseModel):
+class CommissionBillListResponse(ORMBaseModel):
     """佣金结算单列表响应模型"""
     total: int
     page: int
@@ -197,7 +197,7 @@ class CommissionBillFreezeRequest(BaseModel):
     freeze_reason: str = Field(..., description="冻结原因")
 
 
-class ChannelDetailResponse(BaseModel):
+class ChannelDetailResponse(ORMBaseModel):
     """渠道公司详情响应模型"""
     channel_id: int
     channel_code: str
@@ -219,7 +219,7 @@ class ChannelDetailResponse(BaseModel):
     update_time: Optional[datetime]
 
 
-class BrokerDetailResponse(BaseModel):
+class BrokerDetailResponse(ORMBaseModel):
     """经纪人详情响应模型"""
     broker_id: int
     channel_id: int

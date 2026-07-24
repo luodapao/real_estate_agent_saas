@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional
 from datetime import datetime, date
 from decimal import Decimal
@@ -56,7 +56,7 @@ class CostExpenseUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="费用用途、分摊楼栋说明")
 
 
-class CostExpenseResponse(BaseModel):
+class CostExpenseResponse(ORMBaseModel):
     """通用费用申请响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -145,7 +145,7 @@ class ExpenseReimbursementUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="费用用途、楼栋分摊、发票特殊说明")
 
 
-class ExpenseReimbursementResponse(BaseModel):
+class ExpenseReimbursementResponse(ORMBaseModel):
     """费用报销响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -242,7 +242,7 @@ class CostPayUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="批量付款汇总说明、付款失败原因备注")
 
 
-class CostPayResponse(BaseModel):
+class CostPayResponse(ORMBaseModel):
     """费用付款响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -339,7 +339,7 @@ class AdCostUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="投放内容、楼栋分摊比例、结算特殊约定")
 
 
-class AdCostResponse(BaseModel):
+class AdCostResponse(ORMBaseModel):
     """广告推广成本响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -435,7 +435,7 @@ class ProjectEngCostUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="工程内容、楼栋成本分摊比例、质保金约定说明")
 
 
-class ProjectEngCostResponse(BaseModel):
+class ProjectEngCostResponse(ORMBaseModel):
     """工程建设成本响应模型"""
     model_config = {'from_attributes': True}
     id: int

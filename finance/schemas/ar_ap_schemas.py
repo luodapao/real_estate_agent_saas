@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime, date
 from decimal import Decimal
@@ -56,7 +56,7 @@ class AccountReceivableUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="应收台账业务备注")
 
 
-class AccountReceivableResponse(BaseModel):
+class AccountReceivableResponse(ORMBaseModel):
     """客户应收台账响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -152,7 +152,7 @@ class AccountPayableUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="应付台账业务备注")
 
 
-class AccountPayableResponse(BaseModel):
+class AccountPayableResponse(ORMBaseModel):
     """供应商应付台账响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -248,7 +248,7 @@ class AdvancePayUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="预付款业务备注")
 
 
-class AdvancePayResponse(BaseModel):
+class AdvancePayResponse(ORMBaseModel):
     """预付款台账响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -339,7 +339,7 @@ class OtherLoanUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="往来款业务备注")
 
 
-class OtherLoanResponse(BaseModel):
+class OtherLoanResponse(ORMBaseModel):
     """其他往来款台账响应模型"""
     model_config = {'from_attributes': True}
     id: int

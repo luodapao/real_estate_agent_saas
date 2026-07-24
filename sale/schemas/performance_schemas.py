@@ -2,7 +2,7 @@
 房地产SaaS销售管理系统 - 销售业绩与考核模块数据模型
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -29,7 +29,7 @@ class TeamUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class TeamResponse(BaseModel):
+class TeamResponse(ORMBaseModel):
     """销售团队响应模型"""
     team_id: int
     team_code: str
@@ -47,7 +47,7 @@ class TeamResponse(BaseModel):
     update_time: Optional[datetime]
 
 
-class TeamDetailResponse(BaseModel):
+class TeamDetailResponse(ORMBaseModel):
     """销售团队详情响应模型"""
     team_id: int
     team_code: str
@@ -90,7 +90,7 @@ class PerformanceTargetUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class PerformanceTargetResponse(BaseModel):
+class PerformanceTargetResponse(ORMBaseModel):
     """业绩目标响应模型"""
     target_id: int
     project_id: int
@@ -113,7 +113,7 @@ class PerformanceTargetResponse(BaseModel):
 
 # ========== 销售业绩统计模型 ==========
 
-class PersonalPerformanceResponse(BaseModel):
+class PersonalPerformanceResponse(ORMBaseModel):
     """个人销售业绩响应模型"""
     user_id: int
     user_name: str
@@ -135,7 +135,7 @@ class PersonalPerformanceResponse(BaseModel):
     completion_rate: float
 
 
-class TeamPerformanceResponse(BaseModel):
+class TeamPerformanceResponse(ORMBaseModel):
     """团队销售业绩响应模型"""
     team_id: int
     team_name: str
@@ -158,7 +158,7 @@ class TeamPerformanceResponse(BaseModel):
 
 # ========== 销售提成管理模型 ==========
 
-class SalesCommissionResponse(BaseModel):
+class SalesCommissionResponse(ORMBaseModel):
     """销售提成响应模型"""
     commission_id: int
     commission_no: str
@@ -184,7 +184,7 @@ class SalesCommissionResponse(BaseModel):
     update_time: Optional[datetime]
 
 
-class SalesCommissionListResponse(BaseModel):
+class SalesCommissionListResponse(ORMBaseModel):
     """销售提成列表响应模型"""
     total: int
     page: int
@@ -199,7 +199,7 @@ class SalesCommissionFreezeRequest(BaseModel):
     freeze_reason: str = Field(..., description="冻结原因")
 
 
-class SalesCommissionCalculateResponse(BaseModel):
+class SalesCommissionCalculateResponse(ORMBaseModel):
     """销售提成计算响应模型"""
     commission_id: int
     commission_no: str
@@ -214,7 +214,7 @@ class SalesCommissionCalculateResponse(BaseModel):
     message: str
 
 
-class PerformanceRankingResponse(BaseModel):
+class PerformanceRankingResponse(ORMBaseModel):
     """业绩排行响应模型"""
     rank: int
     user_id: int
@@ -227,7 +227,7 @@ class PerformanceRankingResponse(BaseModel):
     payment_amount: Decimal
 
 
-class TeamRankingResponse(BaseModel):
+class TeamRankingResponse(ORMBaseModel):
     """团队业绩排行响应模型"""
     rank: int
     team_id: int

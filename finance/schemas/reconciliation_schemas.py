@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime, date
 from decimal import Decimal
@@ -86,7 +86,7 @@ class BankCheckFinish(BaseModel):
     solve_remark: Optional[str] = Field(None, description="处理方案")
 
 
-class BankCheckResponse(BaseModel):
+class BankCheckResponse(ORMBaseModel):
     """银行对账记录响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -189,7 +189,7 @@ class DailyCashAccountAudit(BaseModel):
         return v
 
 
-class DailyCashAccountResponse(BaseModel):
+class DailyCashAccountResponse(ORMBaseModel):
     """每日资金轧账响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -294,7 +294,7 @@ class ChannelReconcileConfirm(BaseModel):
         return v
 
 
-class ChannelReconcileResponse(BaseModel):
+class ChannelReconcileResponse(ORMBaseModel):
     """渠道月度对账响应模型"""
     model_config = {'from_attributes': True}
     id: int

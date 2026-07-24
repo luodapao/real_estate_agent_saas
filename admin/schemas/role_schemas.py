@@ -6,6 +6,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from common.schemas.response import ORMBaseModel
 
 
 # ========== 角色管理模型 ==========
@@ -27,7 +28,7 @@ class RoleUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class RoleResponse(BaseModel):
+class RoleResponse(ORMBaseModel):
     """角色响应模型"""
     role_id: int = Field(..., description="角色ID")
     tenant_id: int = Field(..., description="租户ID")
@@ -40,7 +41,7 @@ class RoleResponse(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="更新时间")
 
 
-class RoleListResponse(BaseModel):
+class RoleListResponse(ORMBaseModel):
     """角色列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")

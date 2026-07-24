@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -91,7 +91,7 @@ class OperateLogUpdate(BaseModel):
     error_msg: Optional[str] = Field(None, description="操作失败异常信息、报错详情")
 
 
-class OperateLogResponse(BaseModel):
+class OperateLogResponse(ORMBaseModel):
     """财务操作审计日志响应模型"""
     model_config = {'from_attributes': True}
     id: int

@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel, field_validator
 from typing import Optional
 from datetime import datetime, date
 from decimal import Decimal
@@ -72,7 +72,7 @@ class CashFlowUpdate(BaseModel):
     stat_batch: Optional[str] = Field(None, description="统计批次号", max_length=64)
 
 
-class CashFlowResponse(BaseModel):
+class CashFlowResponse(ORMBaseModel):
     """现金流统计表响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -146,7 +146,7 @@ class ReceivableStatUpdate(BaseModel):
     stat_batch: Optional[str] = Field(None, description="统计批次号", max_length=64)
 
 
-class ReceivableStatResponse(BaseModel):
+class ReceivableStatResponse(ORMBaseModel):
     """应收款统计表响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -219,7 +219,7 @@ class TaxStatUpdate(BaseModel):
     stat_batch: Optional[str] = Field(None, description="统计批次号", max_length=64)
 
 
-class TaxStatResponse(BaseModel):
+class TaxStatResponse(ORMBaseModel):
     """税务统计表响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -290,7 +290,7 @@ class CommissionStatUpdate(BaseModel):
     stat_batch: Optional[str] = Field(None, description="统计批次号", max_length=64)
 
 
-class CommissionStatResponse(BaseModel):
+class CommissionStatResponse(ORMBaseModel):
     """佣金统计表响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -364,7 +364,7 @@ class CashFlowStatementUpdate(BaseModel):
     audit_user_id: Optional[int] = Field(None, description="审核人ID")
 
 
-class CashFlowStatementResponse(BaseModel):
+class CashFlowStatementResponse(ORMBaseModel):
     """现金流量表响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -438,7 +438,7 @@ class ProfitStatementUpdate(BaseModel):
     audit_user_id: Optional[int] = Field(None, description="审核人ID")
 
 
-class ProfitStatementResponse(BaseModel):
+class ProfitStatementResponse(ORMBaseModel):
     """利润表响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -509,7 +509,7 @@ class BalanceSheetUpdate(BaseModel):
     audit_user_id: Optional[int] = Field(None, description="审核人ID")
 
 
-class BalanceSheetResponse(BaseModel):
+class BalanceSheetResponse(ORMBaseModel):
     """资产负债表响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -582,7 +582,7 @@ class FinancialReportUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="报表编制说明、数据异常备注")
 
 
-class FinancialReportResponse(BaseModel):
+class FinancialReportResponse(ORMBaseModel):
     """财务报表主表响应模型"""
     model_config = {'from_attributes': True}
     id: int

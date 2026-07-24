@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -41,7 +41,7 @@ class InstallmentPlanUpdate(BaseModel):
     first_payment_date: Optional[datetime] = Field(None, description="首期付款日期")
 
 
-class InstallmentPlanResponse(BaseModel):
+class InstallmentPlanResponse(ORMBaseModel):
     """分期回款计划响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -120,7 +120,7 @@ class PriceDiffUpdate(BaseModel):
     reason: Optional[str] = Field(None, description="调整原因")
 
 
-class PriceDiffResponse(BaseModel):
+class PriceDiffResponse(ORMBaseModel):
     """面积差价调整响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -204,7 +204,7 @@ class ReceiptRecordUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class ReceiptRecordResponse(BaseModel):
+class ReceiptRecordResponse(ORMBaseModel):
     """收款记录响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -292,7 +292,7 @@ class RefundRecordUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class RefundRecordResponse(BaseModel):
+class RefundRecordResponse(ORMBaseModel):
     """退款记录响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -354,7 +354,7 @@ class DepositAccountUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class DepositAccountResponse(BaseModel):
+class DepositAccountResponse(ORMBaseModel):
     """认筹定金台账响应模型"""
     model_config = {'from_attributes': True}
     id: int

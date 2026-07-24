@@ -6,6 +6,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from common.schemas.response import ORMBaseModel
 
 
 # ========== 租户管理模型 ==========
@@ -35,7 +36,7 @@ class TenantUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class TenantResponse(BaseModel):
+class TenantResponse(ORMBaseModel):
     """租户响应模型"""
     tenant_id: int = Field(..., description="租户ID")
     tenant_name: str = Field(..., description="租户名称")
@@ -51,7 +52,7 @@ class TenantResponse(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="更新时间")
 
 
-class TenantListResponse(BaseModel):
+class TenantListResponse(ORMBaseModel):
     """租户列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")

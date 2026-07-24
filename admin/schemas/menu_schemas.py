@@ -6,6 +6,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from common.schemas.response import ORMBaseModel
 
 
 # ========== 菜单管理模型 ==========
@@ -38,7 +39,7 @@ class MenuUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class MenuResponse(BaseModel):
+class MenuResponse(ORMBaseModel):
     """菜单响应模型"""
     menu_id: int = Field(..., description="菜单ID")
     tenant_id: int = Field(..., description="租户ID")
@@ -57,7 +58,7 @@ class MenuResponse(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="更新时间")
 
 
-class MenuListResponse(BaseModel):
+class MenuListResponse(ORMBaseModel):
     """菜单列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
@@ -65,7 +66,7 @@ class MenuListResponse(BaseModel):
     data: List[MenuResponse] = Field(..., description="菜单列表")
 
 
-class MenuTreeResponse(BaseModel):
+class MenuTreeResponse(ORMBaseModel):
     """菜单树响应模型"""
     menu_id: int = Field(..., description="菜单ID")
     menu_name: str = Field(..., description="菜单名称")

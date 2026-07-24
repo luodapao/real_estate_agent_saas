@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
@@ -59,7 +59,7 @@ class ProjectFinConfigUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="财务配置备注说明")
 
 
-class ProjectFinConfigResponse(BaseModel):
+class ProjectFinConfigResponse(ORMBaseModel):
     """项目财务配置响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -124,7 +124,7 @@ class AccountUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="账户备注")
 
 
-class AccountResponse(BaseModel):
+class AccountResponse(ORMBaseModel):
     """账户响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -177,7 +177,7 @@ class SubjectUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="科目备注")
 
 
-class SubjectResponse(BaseModel):
+class SubjectResponse(ORMBaseModel):
     """科目响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -231,7 +231,7 @@ class TaxRateUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注说明")
 
 
-class TaxRateResponse(BaseModel):
+class TaxRateResponse(ORMBaseModel):
     """税率响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -281,7 +281,7 @@ class BankInfoUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注说明")
 
 
-class BankInfoResponse(BaseModel):
+class BankInfoResponse(ORMBaseModel):
     """银行信息响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -339,7 +339,7 @@ class DiscountRuleUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="优惠规则备注")
 
 
-class DiscountRuleResponse(BaseModel):
+class DiscountRuleResponse(ORMBaseModel):
     """优惠规则响应模型"""
     model_config = {'from_attributes': True}
     id: int

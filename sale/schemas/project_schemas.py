@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -41,7 +41,7 @@ class ProjectUpdate(BaseModel):
     opening_date: Optional[str] = Field(None, description="开盘日期")
 
 
-class ProjectResponse(BaseModel):
+class ProjectResponse(ORMBaseModel):
     """楼盘响应模型"""
     project_id: int
     project_code: str
@@ -85,7 +85,7 @@ class BuildingUpdate(BaseModel):
     description: Optional[str] = Field(None, description="楼栋描述")
 
 
-class BuildingResponse(BaseModel):
+class BuildingResponse(ORMBaseModel):
     """楼栋响应模型"""
     building_id: int
     project_id: int
@@ -118,7 +118,7 @@ class UnitUpdate(BaseModel):
     unit_status: Optional[int] = Field(None, description="单元状态")
 
 
-class UnitResponse(BaseModel):
+class UnitResponse(ORMBaseModel):
     """单元响应模型"""
     unit_id: int
     building_id: int
@@ -168,7 +168,7 @@ class HouseUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class HouseResponse(BaseModel):
+class HouseResponse(ORMBaseModel):
     """房源响应模型"""
     house_id: int
     project_id: int
@@ -202,7 +202,7 @@ class HouseLockRequest(BaseModel):
     expire_minutes: Optional[int] = Field(30, description="过期时间（分钟）")
 
 
-class HouseControlPanelResponse(BaseModel):
+class HouseControlPanelResponse(ORMBaseModel):
     """销控面板响应模型"""
     project_id: int
     total_houses: int
@@ -232,7 +232,7 @@ class ProjectRuleUpdate(BaseModel):
     rule_status: Optional[int] = Field(None, description="规则状态：1-启用 2-停用")
 
 
-class ProjectRuleResponse(BaseModel):
+class ProjectRuleResponse(ORMBaseModel):
     """项目规则响应模型"""
     rule_id: int
     project_id: Optional[int]

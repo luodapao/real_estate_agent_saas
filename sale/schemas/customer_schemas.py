@@ -2,7 +2,7 @@
 房地产SaaS销售管理系统 - 客户全生命周期管理模块数据模型
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 
@@ -42,7 +42,7 @@ class CustomerUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class CustomerResponse(BaseModel):
+class CustomerResponse(ORMBaseModel):
     """客户响应模型"""
     customer_id: int
     customer_code: str
@@ -85,7 +85,7 @@ class ReportCreate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class ReportResponse(BaseModel):
+class ReportResponse(ORMBaseModel):
     """报备响应模型"""
     report_id: int
     report_no: str
@@ -116,7 +116,7 @@ class VisitConfirmRequest(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class VisitResponse(BaseModel):
+class VisitResponse(ORMBaseModel):
     """到访响应模型"""
     visit_id: int
     report_id: Optional[int]
@@ -149,7 +149,7 @@ class FollowCreate(BaseModel):
     follow_result: Optional[str] = Field(None, description="跟进结果")
 
 
-class FollowResponse(BaseModel):
+class FollowResponse(ORMBaseModel):
     """跟进记录响应模型"""
     follow_id: int
     customer_id: int
@@ -165,7 +165,7 @@ class FollowResponse(BaseModel):
 
 # ========== 公海客户模型 ==========
 
-class SeaCustomerResponse(BaseModel):
+class SeaCustomerResponse(ORMBaseModel):
     """公海客户响应模型"""
     customer_id: int
     customer_code: str
@@ -180,7 +180,7 @@ class SeaCustomerResponse(BaseModel):
     create_time: Optional[datetime]
 
 
-class CustomerDetailResponse(BaseModel):
+class CustomerDetailResponse(ORMBaseModel):
     """客户详情响应模型"""
     customer_id: int
     customer_code: str

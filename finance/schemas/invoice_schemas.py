@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -42,7 +42,7 @@ class InvoiceUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class InvoiceResponse(BaseModel):
+class InvoiceResponse(ORMBaseModel):
     """蓝字发票响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -98,7 +98,7 @@ class InvoiceRedUpdate(BaseModel):
     total_amount: Optional[Decimal] = Field(None, description="价税合计")
 
 
-class InvoiceRedResponse(BaseModel):
+class InvoiceRedResponse(ORMBaseModel):
     """红字发票响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -142,7 +142,7 @@ class ReceiptUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class ReceiptResponse(BaseModel):
+class ReceiptResponse(ORMBaseModel):
     """内部收据响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -186,7 +186,7 @@ class MaintenanceFundUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class MaintenanceFundResponse(BaseModel):
+class MaintenanceFundResponse(ORMBaseModel):
     """维修基金台账响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -232,7 +232,7 @@ class TaxDeclareUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class TaxDeclareResponse(BaseModel):
+class TaxDeclareResponse(ORMBaseModel):
     """税务申报响应模型"""
     model_config = {'from_attributes': True}
     id: int

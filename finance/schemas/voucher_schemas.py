@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime, date
 from decimal import Decimal
@@ -88,7 +88,7 @@ class VoucherUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="凭证备注、特殊账务处理说明")
 
 
-class VoucherResponse(BaseModel):
+class VoucherResponse(ORMBaseModel):
     """会计凭证响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -181,7 +181,7 @@ class VoucherItemUpdate(BaseModel):
     item_remark: Optional[str] = Field(None, description="分录明细备注、账务说明")
 
 
-class VoucherItemResponse(BaseModel):
+class VoucherItemResponse(ORMBaseModel):
     """凭证明细响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -238,7 +238,7 @@ class VoucherRedFlush(BaseModel):
 
 # ========== 凭证列表响应（含明细） ==========
 
-class VoucherWithItemsResponse(BaseModel):
+class VoucherWithItemsResponse(ORMBaseModel):
     """含明细的凭证响应模型"""
     voucher: VoucherResponse
     items: List[VoucherItemResponse]

@@ -4,10 +4,15 @@
 """
 
 from typing import Generic, TypeVar, Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # 泛型类型
 T = TypeVar('T')
+
+
+class ORMBaseModel(BaseModel):
+    """ORM基础模型 - 所有需要使用from_orm的模型都应继承此类"""
+    model_config = ConfigDict(from_attributes=True)
 
 
 class BaseResponse(BaseModel):
@@ -16,8 +21,7 @@ class BaseResponse(BaseModel):
     message: str
     data: Optional[T] = None
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SuccessResponse(BaseModel, Generic[T]):

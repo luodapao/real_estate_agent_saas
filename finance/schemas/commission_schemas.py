@@ -3,7 +3,7 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime, date
 from decimal import Decimal
@@ -61,7 +61,7 @@ class CommissionPayUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class CommissionPayResponse(BaseModel):
+class CommissionPayResponse(ORMBaseModel):
     """佣金付款单响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -140,7 +140,7 @@ class CommissionDeductUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="扣罚详细原因")
 
 
-class CommissionDeductResponse(BaseModel):
+class CommissionDeductResponse(ORMBaseModel):
     """佣金扣罚记录响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -205,7 +205,7 @@ class SalesCommissionUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="提成计算规则备注")
 
 
-class SalesCommissionResponse(BaseModel):
+class SalesCommissionResponse(ORMBaseModel):
     """销售提成支付明细响应模型"""
     model_config = {'from_attributes': True}
     id: int
@@ -282,7 +282,7 @@ class SalesBonusPayUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="月度提成代发备注")
 
 
-class SalesBonusPayResponse(BaseModel):
+class SalesBonusPayResponse(ORMBaseModel):
     """内部销售提成付款单响应模型"""
     model_config = {'from_attributes': True}
     id: int

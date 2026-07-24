@@ -2,7 +2,7 @@
 房地产SaaS销售管理系统 - 认购签约交易模块数据模型
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -31,7 +31,7 @@ class SubscribeUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class SubscribeResponse(BaseModel):
+class SubscribeResponse(ORMBaseModel):
     """认购单响应模型"""
     subscribe_id: int
     subscribe_no: str
@@ -86,7 +86,7 @@ class ContractUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class ContractResponse(BaseModel):
+class ContractResponse(ORMBaseModel):
     """签约合同响应模型"""
     contract_id: int
     contract_no: str
@@ -143,7 +143,7 @@ class PaymentUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class PaymentResponse(BaseModel):
+class PaymentResponse(ORMBaseModel):
     """回款记录响应模型"""
     payment_id: int
     payment_no: str
@@ -190,7 +190,7 @@ class LoanUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class LoanResponse(BaseModel):
+class LoanResponse(ORMBaseModel):
     """贷款记录响应模型"""
     loan_id: int
     contract_id: int
@@ -237,7 +237,7 @@ class ReceiptUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class ReceiptResponse(BaseModel):
+class ReceiptResponse(ORMBaseModel):
     """发票记录响应模型"""
     receipt_id: int
     receipt_no: str
@@ -260,7 +260,7 @@ class ReceiptResponse(BaseModel):
 
 # ========== 交易综合查询模型 ==========
 
-class TransactionListResponse(BaseModel):
+class TransactionListResponse(ORMBaseModel):
     """交易综合列表响应模型"""
     total: int
     page: int
@@ -269,7 +269,7 @@ class TransactionListResponse(BaseModel):
     data: List[dict]
 
 
-class SubscribeDetailResponse(BaseModel):
+class SubscribeDetailResponse(ORMBaseModel):
     """认购单详情响应模型"""
     subscribe_id: int
     subscribe_no: str
@@ -288,7 +288,7 @@ class SubscribeDetailResponse(BaseModel):
     update_time: Optional[datetime]
 
 
-class ContractDetailResponse(BaseModel):
+class ContractDetailResponse(ORMBaseModel):
     """合同详情响应模型"""
     contract_id: int
     contract_no: str

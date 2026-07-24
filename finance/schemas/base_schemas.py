@@ -3,7 +3,7 @@
 用于API接口的通用响应数据格式
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
 from typing import Optional, Generic, TypeVar, List
 
 T = TypeVar('T')

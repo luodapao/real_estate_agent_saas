@@ -6,6 +6,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from common.schemas.response import ORMBaseModel
 
 
 # ========== 字典类型模型 ==========
@@ -25,7 +26,7 @@ class DictTypeUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class DictTypeResponse(BaseModel):
+class DictTypeResponse(ORMBaseModel):
     """字典类型响应模型"""
     dict_id: int = Field(..., description="字典类型ID")
     dict_name: str = Field(..., description="字典名称")
@@ -57,7 +58,7 @@ class DictItemUpdate(BaseModel):
     remark: Optional[str] = Field(None, description="备注")
 
 
-class DictItemResponse(BaseModel):
+class DictItemResponse(ORMBaseModel):
     """字典项响应模型"""
     item_id: int = Field(..., description="字典项ID")
     dict_id: int = Field(..., description="字典类型ID")
@@ -70,7 +71,7 @@ class DictItemResponse(BaseModel):
     updated_at: Optional[datetime] = Field(None, description="更新时间")
 
 
-class DictItemListResponse(BaseModel):
+class DictItemListResponse(ORMBaseModel):
     """字典项列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
@@ -78,7 +79,7 @@ class DictItemListResponse(BaseModel):
     data: List[DictItemResponse] = Field(..., description="字典项列表")
 
 
-class DictTypeListResponse(BaseModel):
+class DictTypeListResponse(ORMBaseModel):
     """字典类型列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")

@@ -6,11 +6,12 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
+from common.schemas.response import ORMBaseModel
 
 
 # ========== 登录日志模型 ==========
 
-class LoginLogResponse(BaseModel):
+class LoginLogResponse(ORMBaseModel):
     """登录日志响应模型"""
     log_id: int = Field(..., description="日志ID")
     tenant_id: int = Field(..., description="租户ID")
@@ -23,7 +24,7 @@ class LoginLogResponse(BaseModel):
     user_agent: Optional[str] = Field(None, description="客户端信息")
 
 
-class LoginLogListResponse(BaseModel):
+class LoginLogListResponse(ORMBaseModel):
     """登录日志列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
@@ -33,7 +34,7 @@ class LoginLogListResponse(BaseModel):
 
 # ========== 操作日志模型 ==========
 
-class OperationLogResponse(BaseModel):
+class OperationLogResponse(ORMBaseModel):
     """操作日志响应模型"""
     log_id: int = Field(..., description="日志ID")
     tenant_id: int = Field(..., description="租户ID")
@@ -49,7 +50,7 @@ class OperationLogResponse(BaseModel):
     created_at: Optional[datetime] = Field(None, description="操作时间")
 
 
-class OperationLogListResponse(BaseModel):
+class OperationLogListResponse(ORMBaseModel):
     """操作日志列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
@@ -59,7 +60,7 @@ class OperationLogListResponse(BaseModel):
 
 # ========== 日志列表模型 ==========
 
-class LogListResponse(BaseModel):
+class LogListResponse(ORMBaseModel):
     """日志列表响应模型（通用）"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
