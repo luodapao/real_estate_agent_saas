@@ -24,7 +24,7 @@ class LoginLogResponse(ORMBaseModel):
     user_agent: Optional[str] = Field(None, description="客户端信息")
 
 
-class LoginLogListResponse(ORMBaseModel):
+class LoginLogListResponse(BaseModel):
     """登录日志列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
@@ -50,7 +50,7 @@ class OperationLogResponse(ORMBaseModel):
     created_at: Optional[datetime] = Field(None, description="操作时间")
 
 
-class OperationLogListResponse(ORMBaseModel):
+class OperationLogListResponse(BaseModel):
     """操作日志列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
@@ -60,7 +60,7 @@ class OperationLogListResponse(ORMBaseModel):
 
 # ========== 日志列表模型 ==========
 
-class LogListResponse(ORMBaseModel):
+class LogListResponse(BaseModel):
     """日志列表响应模型（通用）"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")

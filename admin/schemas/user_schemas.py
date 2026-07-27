@@ -90,7 +90,7 @@ class UserDetailResponse(ORMBaseModel):
     updated_at: Optional[datetime] = Field(None, description="更新时间")
 
 
-class UserListResponse(ORMBaseModel):
+class UserListResponse(BaseModel):
     """用户列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")

@@ -71,7 +71,7 @@ class DictItemResponse(ORMBaseModel):
     updated_at: Optional[datetime] = Field(None, description="更新时间")
 
 
-class DictItemListResponse(ORMBaseModel):
+class DictItemListResponse(BaseModel):
     """字典项列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
@@ -79,7 +79,7 @@ class DictItemListResponse(ORMBaseModel):
     data: List[DictItemResponse] = Field(..., description="字典项列表")
 
 
-class DictTypeListResponse(ORMBaseModel):
+class DictTypeListResponse(BaseModel):
     """字典类型列表响应模型"""
     total: int = Field(..., description="总数")
     page: int = Field(..., description="页码")
