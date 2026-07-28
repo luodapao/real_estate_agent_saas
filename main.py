@@ -18,9 +18,8 @@ from core.redis_base import redis_client
 # from core.mq_producer import mq_producer
 
 # 子系统路由
-from admin.router.login_router import router as login_router
+from admin.router.admin_router import router as admin_router
 from admin.router.tenant_router import router as tenant_router
-from admin.router.user_router import router as user_router
 from admin.router.role_router import router as role_router
 from admin.router.menu_router import router as menu_router
 from admin.router.dict_router import router as dict_router
@@ -99,9 +98,8 @@ def create_app() -> FastAPI:
     app.middleware("http")(auth_middleware)
 
     # 注册子系统路由
-    app.include_router(login_router, prefix="/api/admin", tags=["Admin - 登录管理"])
-    app.include_router(tenant_router, prefix="/api/admin", tags=["Admin - 租户管理"])
-    app.include_router(user_router, prefix="/api/admin", tags=["Admin - 用户管理"])
+    app.include_router(admin_router, tags=["Admin - 软商用户管理"])
+    app.include_router(tenant_router, tags=["Admin - 租户管理"])
     app.include_router(role_router, prefix="/api/admin", tags=["Admin - 角色管理"])
     app.include_router(menu_router, prefix="/api/admin", tags=["Admin - 菜单管理"])
     app.include_router(dict_router, prefix="/api/admin", tags=["Admin - 数据字典"])

@@ -41,7 +41,7 @@ async def get_user_list(request: Request, user_name: Optional[str] = None,
 
 @router.post("/", summary="创建用户", response_model=UserResponse)
 async def create_user(request: Request, data: UserCreate, db: Session = Depends(get_db)):
-    """创建用户接口（支持公开注册和管理员创建）"""
+    """创建用户接口（仅支持管理员创建）"""
     try:
         user_info = request.state.user_info
         

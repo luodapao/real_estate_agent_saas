@@ -72,10 +72,7 @@ WHITE_LIST = [
     # 认证相关（公开接口）
     {'path': '/api/admin/login', 'methods': ['POST'], 'exact': True},
     {'path': '/api/admin/refresh-token', 'methods': ['POST'], 'exact': True},
-    {'path': '/api/admin/reset_pwd', 'methods': ['POST'], 'exact': True},
-    {'path': '/api/admin/send_verify_code', 'methods': ['POST'], 'exact': True},
-    # 用户注册（公开接口，仅POST）
-    {'path': '/api/admin/user', 'methods': ['POST'], 'exact': True},
+    # 用户注册已移除，改为由平台超级管理员创建账号
     # 文档页面（不限制方法）
     {'path': '/docs', 'methods': ['GET', 'HEAD'], 'exact': True},
     {'path': '/redoc', 'methods': ['GET', 'HEAD'], 'exact': True},

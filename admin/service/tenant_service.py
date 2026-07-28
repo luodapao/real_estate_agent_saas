@@ -71,15 +71,18 @@ class TenantService:
         # 创建租户
         tenant = TenantDAO.create(db, tenant)
         
-        # 创建超级用户
+        # 创建租户超级管理员用户
+        # 使用tenant_code作为登录账号，更符合业务习惯
+        # 默认密码使用tenant_code，平台管理员可以后续重置
         sys_user = SysUser(
             tenant_id=tenant.tenant_id,
-            account=data.tenant_name,
+            account=data.tenant_code,
             password=PasswordUtil.hash_password(data.tenant_code),
-            name=data.tenant_name,
+            name=data.contact_name or data.tenant_name,
             mobile=data.contact_mobile,
             email=data.contact_email,
-            status=USER_STATUS['NORMAL']
+            status=USER_STATUS['NORMAL'],
+            user_type=1  # 租户超级管理员
         )
         sys_user = UserDAO.create(db, sys_user)
         

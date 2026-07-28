@@ -129,3 +129,21 @@ class UserDAO:
         ).all()
         
         return [p[0] for p in permissions] if permissions else []
+    
+    @staticmethod
+    def get_platform_user_list(db: Session, name: str = None, login_name: str = None, status: int = None, page: int = 1, size: int = 10):
+        """分页查询平台超级用户列表（tenant_id=0, user_type=0）"""
+        query = db.query(SysUser).filter(
+            SysUser.tenant_id == 0,
+            SysUser.user_type == 0,
+            SysUser.is_del == 0
+        )
+        if name:
+            query = query.filter(SysUser.name.like(f'%{name}%'))
+        if login_name:
+            query = query.filter(SysUser.account.like(f'%{login_name}%'))
+        if status is not None:
+            query = query.filter(SysUser.status == status)
+        total = query.count()
+        data = query.offset((page - 1) * size).limit(size).all()
+        return total, data

@@ -123,5 +123,27 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str = Field(..., description="刷新令牌")
 
 
+# ========== 平台超级用户管理模型 ==========
+
+class PlatformUserCreate(BaseModel):
+    """创建平台超级用户请求模型"""
+    account: str = Field(..., description="登录账号", max_length=50)
+    name: str = Field(..., description="用户姓名", max_length=50)
+    password: str = Field(..., description="密码", max_length=100)
+    mobile: Optional[str] = Field(None, description="手机号", max_length=20)
+    email: Optional[str] = Field(None, description="邮箱", max_length=100)
+    status: Optional[int] = Field(1, description="状态：1-正常，2-禁用")
+    remark: Optional[str] = Field(None, description="备注")
+
+
+class PlatformUserUpdate(BaseModel):
+    """更新平台超级用户请求模型"""
+    name: Optional[str] = Field(None, description="用户姓名", max_length=50)
+    mobile: Optional[str] = Field(None, description="手机号", max_length=20)
+    email: Optional[str] = Field(None, description="邮箱", max_length=100)
+    status: Optional[int] = Field(None, description="状态")
+    remark: Optional[str] = Field(None, description="备注")
+
+
 # 更新引用
 LoginResponse.update_forward_refs()

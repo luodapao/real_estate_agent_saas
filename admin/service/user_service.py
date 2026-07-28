@@ -9,7 +9,7 @@ from admin.dao.user_dao import UserDAO
 from admin.dao.token_dao import TokenDAO
 from admin.schemas.user_schemas import (
     UserCreate, UserUpdate, UserResponse, UserDetailResponse,
-    ResetPasswordRequest, GrantRoleRequest
+    ResetPasswordRequest, GrantRoleRequest, PlatformUserCreate, PlatformUserUpdate
 )
 from config.exception import (
     AuthException, ParamException, PasswordExpiredException,
@@ -304,3 +304,60 @@ class UserService:
         
         db.commit()
         return {'user_id': user_id, 'role_ids': data.role_ids}
+    
+    # ========== 平台超级用户管理方法 ==========
+    
+    @staticmethod
+    def create_platform_user(db: Session, data: PlatformUserCreate) -> UserResponse:
+        """创建平台超级用户（tenant_id=0, user_type=0）"""
+        existing = UserDAO.get_by_account(db, data.account)
+        if existing:
+            raise ParamException("账号已存在")
+        
+        if not PasswordUtil.is_password_strong(data.password):
+            raise ParamException("密码强度不足，需要包含大小写字母和数字，至少8位")
+        
+        expire_time = datetime.now() + timedelta(days=LOGIN_CONFIG['password_expire_days'])
+        
+        user = SysUser(
+            tenant_id=0,
+            account=data.account,
+            password=PasswordUtil.hash_password(data.password),
+            name=data.name,
+            mobile=data.mobile,
+            email=data.email,
+            status=data.status or USER_STATUS['NORMAL'],
+            user_type=0,  # 平台超级管理员
+            pwd_expire_time=expire_time,
+            remark=data.remark
+        )
+        
+        created_user = UserDAO.create(db, user)
+        return UserResponse.from_orm(created_user)
+    
+    @staticmethod
+    def get_platform_user_list(db: Session, user_name: str = None, login_name: str = None, status: int = None, page: int = 1, size: int = 10):
+        """分页查询平台超级用户列表（tenant_id=0）"""
+        total, data = UserDAO.get_platform_user_list(db, user_name, login_name, status, page, size)
+        user_list = [UserResponse.from_orm(user).model_dump() for user in data]
+        return {
+            'total': total,
+            'page': page,
+            'size': size,
+            'data': user_list
+        }
+    
+    @staticmethod
+    def update_platform_user(db: Session, user_id: int, data: PlatformUserUpdate) -> UserResponse:
+        """更新平台超级用户"""
+        user = UserDAO.get(db, user_id)
+        if not user:
+            raise BusinessException("用户不存在")
+        
+        if user.tenant_id != 0 or user.user_type != 0:
+            raise BusinessException("只能更新平台超级用户")
+        
+        update_dict = data.model_dump(exclude_unset=True)
+        
+        updated_user = UserDAO.update(db, user_id, update_dict)
+        return UserResponse.from_orm(updated_user)

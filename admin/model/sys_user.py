@@ -22,7 +22,7 @@ class SysUser(Base):
     dept_id = Column(BIGINT, comment='部门ID')
     status = Column(TINYINT, default=1, comment='状态：1-正常，2-禁用，3-锁定，4-待审核')
     pwd_expire_time = Column(DateTime, comment='密码过期时间')
-    user_type = Column(TINYINT, default=1, comment='用户类型：1-内部用户，2-分销渠道后台管理员、3-外部经纪人')
+    user_type = Column(TINYINT, default=1, comment='用户类型：0-超级用户，1-内部用户，2-分销渠道后台管理员、3-外部经纪人')
     last_login_time = Column(DateTime, comment='最后登录时间')
     last_login_ip = Column(String(50), comment='最后登录IP')
     login_failed_count = Column(BIGINT, default=0, comment='登录失败次数')
