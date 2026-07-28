@@ -16,7 +16,7 @@ from admin.schemas.user_schemas import (
     GrantRoleRequest
 )
 from config.exception import success_response, error_response
-from admin.router.auth_deps import require_tenant_admin
+from core.auth_deps import require_tenant_admin
 
 
 # ========== 租户管理路由（租户超级管理员）==========

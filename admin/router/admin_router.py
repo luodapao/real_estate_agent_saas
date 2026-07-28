@@ -22,7 +22,7 @@ from admin.schemas.tenant_schemas import (
 )
 from config.exception import success_response, error_response
 from config.constants import LOGIN_TYPE
-from admin.router.auth_deps import require_platform_admin
+from core.auth_deps import require_platform_admin
 
 
 # ========== 主路由 ==========
