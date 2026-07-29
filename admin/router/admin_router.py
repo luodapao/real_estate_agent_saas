@@ -95,18 +95,17 @@ async def change_password(request: Request, data: ChangePasswordRequest, db: Ses
 platform_router = APIRouter(prefix="/platform", tags=["平台管理"])
 
 
-# 平台超级用户管理
+# 平台超级用户管理（放开鉴权，用于初始化平台超级账号）
 @platform_router.post("/users", summary="创建平台超级用户", response_model=UserResponse)
 async def create_platform_user(request: Request, data: PlatformUserCreate, 
-                               db: Session = Depends(get_db), 
-                               admin_info: dict = Depends(require_platform_admin)):
-    """创建平台超级用户（仅平台超级管理员）"""
+                               db: Session = Depends(get_db)):
+    """创建平台超级用户（开放注册，用于初始化平台超级账号）"""
     try:
         result = UserService.create_platform_user(db, data)
         
         # 记录操作日志
-        LogService.add_operation_log(db, admin_info['tenant_id'], admin_info['user_id'], 
-                                    admin_info['login_name'], "系统管理", "POST", 
+        LogService.add_operation_log(db, 0, 0, 
+                                    data.login_name, "系统管理", "POST", 
                                     "/api/admin/platform/users", str(data.model_dump()), 1, 
                                     "创建平台超级用户成功", request.client.host if request.client else "unknown")
         
