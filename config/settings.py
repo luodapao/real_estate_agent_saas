@@ -69,6 +69,8 @@ REDIS_EXPIRE = {
 # 允许放行的接口（不需要鉴权）
 # 格式: {'path': 路径, 'methods': [HTTP方法列表], 'exact': 是否精确匹配}
 WHITE_LIST = [
+    # 根路径
+    {'path': '/', 'methods': ['GET', 'HEAD'], 'exact': True},
     # 认证相关（公开接口）
     {'path': '/api/admin/login', 'methods': ['POST'], 'exact': True},
     {'path': '/api/admin/refresh-token', 'methods': ['POST'], 'exact': True},
