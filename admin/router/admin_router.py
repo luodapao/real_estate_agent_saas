@@ -105,7 +105,7 @@ async def create_platform_user(request: Request, data: PlatformUserCreate,
         
         # 记录操作日志
         LogService.add_operation_log(db, 0, 0, 
-                                    data.login_name, "系统管理", "POST", 
+                                    data.account, "系统管理", "POST", 
                                     "/api/admin/platform/users", str(data.model_dump()), 1, 
                                     "创建平台超级用户成功", request.client.host if request.client else "unknown")
         
