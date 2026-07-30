@@ -61,10 +61,10 @@ class TenantService:
             tenant_code=data.tenant_code,
             contact_name=data.contact_name,
             contact_mobile=data.contact_mobile,
-            email=data.contact_email,
+            email=data.email,
             address=data.address,
             remark=data.remark,
-            expire_date=data.expire_date,
+            expire_time=data.expire_time,
             status=data.status or TENANT_STATUS['NORMAL']
         )
         

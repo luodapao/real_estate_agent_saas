@@ -17,10 +17,10 @@ class TenantCreate(BaseModel):
     tenant_code: str = Field(..., description="租户编码", max_length=50)
     contact_name: Optional[str] = Field(None, description="联系人", max_length=50)
     contact_mobile: Optional[str] = Field(None, description="联系电话", max_length=20)
-    contact_email: Optional[str] = Field(None, description="联系邮箱", max_length=100)
+    email: Optional[str] = Field(None, description="联系邮箱", max_length=100)
     address: Optional[str] = Field(None, description="地址", max_length=200)
     status: Optional[int] = Field(1, description="状态：1-正常，2-禁用")
-    expire_date: Optional[str] = Field(None, description="过期日期")
+    expire_time: Optional[datetime] = Field(None, description="过期日期")
     remark: Optional[str] = Field(None, description="备注")
 
 
@@ -29,10 +29,10 @@ class TenantUpdate(BaseModel):
     tenant_name: Optional[str] = Field(None, description="租户名称", max_length=100)
     contact_name: Optional[str] = Field(None, description="联系人", max_length=50)
     contact_mobile: Optional[str] = Field(None, description="联系电话", max_length=20)
-    contact_email: Optional[str] = Field(None, description="联系邮箱", max_length=100)
+    email: Optional[str] = Field(None, description="联系邮箱", max_length=100)
     address: Optional[str] = Field(None, description="地址", max_length=200)
     status: Optional[int] = Field(None, description="状态")
-    expire_date: Optional[str] = Field(None, description="过期日期")
+    expire_time: Optional[datetime] = Field(None, description="过期日期")
     remark: Optional[str] = Field(None, description="备注")
 
 
@@ -43,10 +43,10 @@ class TenantResponse(ORMBaseModel):
     tenant_code: str = Field(..., description="租户编码")
     contact_name: Optional[str] = Field(None, description="联系人")
     contact_mobile: Optional[str] = Field(None, description="联系电话")
-    contact_email: Optional[str] = Field(None, description="联系邮箱")
+    email: Optional[str] = Field(None, description="联系邮箱")
     address: Optional[str] = Field(None, description="地址")
     status: int = Field(..., description="状态")
-    expire_date: Optional[datetime] = Field(None, description="过期日期")
+    expire_time: Optional[datetime] = Field(None, description="过期日期")
     remark: Optional[str] = Field(None, description="备注")
     created_at: Optional[datetime] = Field(None, description="创建时间")
     updated_at: Optional[datetime] = Field(None, description="更新时间")
