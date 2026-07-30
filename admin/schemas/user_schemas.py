@@ -30,6 +30,7 @@ class LoginResponse(ORMBaseModel):
 
 class UserCreate(BaseModel):
     """创建用户请求模型"""
+    tenant_id: int = Field(..., description="租户ID")
     account: str = Field(..., description="登录账号", max_length=50)
     name: str = Field(..., description="用户姓名", max_length=50)
     password: str = Field(..., description="密码", max_length=100)

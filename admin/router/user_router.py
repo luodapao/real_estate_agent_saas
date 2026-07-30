@@ -45,8 +45,7 @@ async def create_user(request: Request, data: UserCreate, db: Session = Depends(
     try:
         user_info = request.state.user_info
         
-        # 获取租户ID（公开注册时使用默认租户ID 1）
-        tenant_id = user_info['tenant_id'] or 1
+        tenant_id = user_info['tenant_id']
         
         result = UserService.create_user(db, tenant_id, data)
         
