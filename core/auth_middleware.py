@@ -86,13 +86,11 @@ async def auth_middleware(request: Request, call_next):
     user_id = payload.get('user_id')
     agent_identifier = payload.get('agent_identifier')
     
-    # 获取请求头中的Agent标识
-    request_agent = request.headers.get('X-Agent-Identifier')
-    if not request_agent:
-        raise AuthException("缺少Agent标识")
+    # 获取请求头中的Agent标识（平台超管可无需此标识，使用默认值）
+    request_agent = request.headers.get('X-Agent-Identifier', agent_identifier)
     
-    # Agent标识绑定校验
-    if agent_identifier != request_agent:
+    # Agent标识绑定校验（仅当token绑定了特定agent时才校验）
+    if agent_identifier and agent_identifier != request_agent:
         # 作废Token
         JWTUtil.blacklist_token(access_token)
         raise TokenInvalidException("Agent标识不匹配")
