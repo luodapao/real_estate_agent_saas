@@ -221,7 +221,7 @@ class UserService:
         }
     
     @staticmethod
-    def create_user(db: Session, data: UserCreate) -> UserResponse:
+    def create_user(db: Session, tenant_id: int, data: UserCreate) -> UserResponse:
         """创建用户"""
         existing = UserDAO.get_by_account(db, data.account)
         if existing:
@@ -233,7 +233,7 @@ class UserService:
         expire_time = datetime.now() + timedelta(days=LOGIN_CONFIG['password_expire_days'])
         
         user = SysUser(
-            tenant_id=data.tenant_id,
+            tenant_id=tenant_id,
             account=data.account,
             password=PasswordUtil.hash_password(data.password),
             name=data.name,

@@ -22,15 +22,12 @@ class UserDAO:
         ).first()
     
     @staticmethod
-    def get_by_account(db: Session, account: str, tenant_id: int = None):
+    def get_by_account(db: Session, account: str):
         """根据账号查询用户"""
-        query = db.query(SysUser).filter(
+        return db.query(SysUser).filter(
             SysUser.account == account,
             SysUser.is_del == 0
-        )
-        if tenant_id is not None:
-            query = query.filter(SysUser.tenant_id == tenant_id)
-        return query.first()
+        ).first()
     
     @staticmethod
     def get_list(db: Session, tenant_id: int, name: str = None, status: int = None, page: int = 1, size: int = 10):
