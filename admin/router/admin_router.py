@@ -294,7 +294,7 @@ async def disable_tenant(request: Request, tenant_id: int, db: Session = Depends
 
 # 平台超管为指定租户创建租户管理员
 @platform_router.post("/tenants/{tenant_id}/users", summary="创建租户管理员", response_model=UserResponse)
-async def create_tenant_admin(request: Request, data: UserCreate,
+async def create_tenant_admin(request: Request, tenant_id: int, data: UserCreate,
                               db: Session = Depends(get_db),
                               admin_info: dict = Depends(require_platform_admin)):
     """为指定租户创建管理员（仅平台超级管理员）"""
@@ -302,7 +302,7 @@ async def create_tenant_admin(request: Request, data: UserCreate,
         # 设置用户类型为租户超级管理员（user_type=1）
         data.user_type = 1
         
-        result = UserService.create_user(db, data)
+        result = UserService.create_user(db, tenant_id, data)
         
         # 记录操作日志
         LogService.add_operation_log(db, admin_info['tenant_id'], admin_info['user_id'], 
