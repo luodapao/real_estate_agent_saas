@@ -80,7 +80,7 @@ class TenantService:
             password=PasswordUtil.hash_password(data.tenant_code),
             name=data.contact_name or data.tenant_name,
             mobile=data.contact_mobile,
-            email=data.contact_email,
+            email=data.email,
             status=USER_STATUS['NORMAL'],
             user_type=1  # 租户超级管理员
         )
