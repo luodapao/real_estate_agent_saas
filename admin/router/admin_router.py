@@ -15,7 +15,7 @@ from admin.service.log_service import LogService
 from admin.schemas.user_schemas import (
     LoginRequest, LoginResponse, ChangePasswordRequest,
     RefreshTokenRequest, PlatformUserCreate, PlatformUserUpdate,
-    UserResponse, UserDetailResponse
+    UserCreate, UserResponse, UserDetailResponse
 )
 from admin.schemas.tenant_schemas import (
     TenantCreate, TenantUpdate, TenantResponse, TenantListResponse
@@ -288,6 +288,29 @@ async def disable_tenant(request: Request, tenant_id: int, db: Session = Depends
                                     "禁用租户成功", request.client.host if request.client else "unknown")
         
         return success_response(data=result, message="禁用成功")
+    except Exception as e:
+        return error_response(5000, str(e))
+
+
+# 平台超管为指定租户创建租户管理员
+@platform_router.post("/tenants/{tenant_id}/users", summary="创建租户管理员", response_model=UserResponse)
+async def create_tenant_admin(request: Request, tenant_id: int, data: UserCreate,
+                              db: Session = Depends(get_db),
+                              admin_info: dict = Depends(require_platform_admin)):
+    """为指定租户创建管理员（仅平台超级管理员）"""
+    try:
+        # 设置用户类型为租户超级管理员（user_type=1）
+        data.user_type = 1
+        
+        result = UserService.create_user(db, tenant_id, data)
+        
+        # 记录操作日志
+        LogService.add_operation_log(db, admin_info['tenant_id'], admin_info['user_id'], 
+                                    admin_info['login_name'], "系统管理", "POST", 
+                                    f"/api/admin/platform/tenants/{tenant_id}/users", str(data.model_dump()), 1, 
+                                    "创建租户管理员成功", request.client.host if request.client else "unknown")
+        
+        return success_response(data=result, message="创建成功")
     except Exception as e:
         return error_response(5000, str(e))
 
