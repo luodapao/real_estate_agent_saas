@@ -542,7 +542,6 @@ class ReportVisitService:
         protect_expire_time_rule = SaleProjectRuleDAO.get_rule_value(
             self.db, project_id, 'visit_protect_days', self.tenant, default_value=30
         )
-        visit_data['protect_expire_time_rule'] = protect_expire_time_rule
         
         # 计算保护期过期时间 = 创建时间 + 保护期规则天数
         visit_data['protect_expire_time'] = datetime.now() + timedelta(days=protect_expire_time_rule)
@@ -654,7 +653,6 @@ class ReportVisitService:
                 'visit_time': v.visit_time.isoformat() if v.visit_time else None,
                 'visit_type': v.visit_type,
                 'reception_score': float(v.reception_score) if v.reception_score else None,
-                'protect_expire_time_rule': v.protect_expire_time_rule,
                 'protect_expire_time': v.protect_expire_time.isoformat() if v.protect_expire_time else None,
                 'visit_status': v.visit_status,
                 'create_time': v.create_time.isoformat() if v.create_time else None
