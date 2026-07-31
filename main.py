@@ -25,6 +25,20 @@ from admin.router.menu_router import router as menu_router
 from admin.router.dict_router import router as dict_router
 from admin.router.log_router import router as log_router
 from sale.router.sale_router import router as sale_router
+
+# 导入子系统模型（确保表定义被注册到Base.metadata）
+import sale.model.sale_models
+import admin.model.sys_user
+import admin.model.sys_role
+import admin.model.sys_menu
+import admin.model.sys_dict
+import admin.model.sys_log_operation
+import admin.model.sys_log_login
+import admin.model.sys_tenant
+import admin.model.sys_token
+import admin.model.sys_user_role
+import admin.model.sys_role_menu
+import admin.model.sys_dept
 # 
 # try:
 #     from cash.router import router as cash_router
@@ -197,6 +211,10 @@ async def global_exception_handler(request: Request, exc: Exception):
 @app.on_event("startup")
 async def startup_event():
     """应用启动事件"""
+    # 自动创建所有表（如果不存在）
+    Base.metadata.create_all(bind=engine)
+    print("数据库表初始化完成")
+    
     init_app(app)
     print("房地产Agent SaaS管理平台启动完成")
 
