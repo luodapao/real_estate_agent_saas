@@ -24,12 +24,7 @@ from admin.router.role_router import router as role_router
 from admin.router.menu_router import router as menu_router
 from admin.router.dict_router import router as dict_router
 from admin.router.log_router import router as log_router
-
-# ========== 预留子系统路由（当前仅测试admin模块，暂时注释）==========
-# try:
-#     from sale.router import router as sale_router
-# except ImportError:
-#     sale_router = None
+from sale.router.sale_router import router as sale_router
 # 
 # try:
 #     from cash.router import router as cash_router
@@ -105,9 +100,8 @@ def create_app() -> FastAPI:
     app.include_router(dict_router, prefix="/api/admin", tags=["Admin - 数据字典"])
     app.include_router(log_router, prefix="/api/admin", tags=["Admin - 日志管理"])
 
-    # ========== 注册预留子系统路由（当前仅测试admin模块，暂时注释）==========
-    # if sale_router:
-    #     app.include_router(sale_router, prefix="/api/sale", tags=["Sale - 销售管理"])
+    # ========== 注册预留子系统路由 ==========
+    app.include_router(sale_router, prefix="/api", tags=["Sale - 销售管理"])
     # if cash_router:
     #     app.include_router(cash_router, prefix="/api/cash", tags=["Cash - 财务管理"])
     # if engineer_router:
