@@ -109,33 +109,27 @@ class ReportResponse(ORMBaseModel):
 
 class VisitConfirmRequest(BaseModel):
     """确认到访请求模型"""
-    visit_time: str = Field(..., description="到访时间")
-    visit_type: Optional[str] = Field("首次到访", description="到访类型（首次到访/再次到访）")
-    visit_count: Optional[int] = Field(1, description="到访次数")
+    visit_time: Optional[str] = Field(None, description="到访时间")
+    visit_type: Optional[str] = Field("首次到访", description="到访类型（首次到访/多次到访）")
     receive_user_id: Optional[int] = Field(None, description="接待销售ID")
-    visit_result: Optional[str] = Field(None, description="到访结果")
-    remark: Optional[str] = Field(None, description="备注")
 
 
 class VisitResponse(ORMBaseModel):
     """到访响应模型"""
     visit_id: int
-    report_id: Optional[int]
+    tenant: str
     customer_id: int
-    customer_name: str
     project_id: int
-    project_name: str
+    report_id: Optional[int]
+    receive_user_id: Optional[int]
     visit_time: Optional[datetime]
     visit_type: Optional[str]
-    visit_count: Optional[int]
-    receive_user_id: Optional[int]
-    receive_user_name: Optional[str]
+    reception_score: Optional[float]
+    protect_expire_time: Optional[datetime]
     visit_status: int
-    visit_result: Optional[str]
-    broker_id: Optional[int]
-    channel_id: Optional[int]
-    remark: Optional[str]
+    status: int
     create_time: Optional[datetime]
+    update_time: Optional[datetime]
 
 
 # ========== 跟进记录模型 ==========
@@ -148,22 +142,23 @@ class FollowCreate(BaseModel):
     follow_content: str = Field(..., description="跟进内容")
     customer_intention: Optional[str] = Field(None, description="客户意向度")
     next_follow_time: Optional[str] = Field(None, description="下次跟进时间")
-    follow_result: Optional[str] = Field(None, description="跟进结果")
 
 
 class FollowResponse(ORMBaseModel):
     """跟进记录响应模型"""
     follow_id: int
+    tenant: str
     customer_id: int
+    follow_user_id: Optional[int]
     follow_method: str
     follow_time: Optional[datetime]
     follow_content: str
     customer_intention: Optional[str]
     next_follow_time: Optional[datetime]
-    follow_result: Optional[str]
-    follow_user_id: int
-    follow_user_name: str
+    follow_status: int
+    status: int
     create_time: Optional[datetime]
+    update_time: Optional[datetime]
 
 
 # ========== 公海客户模型 ==========
