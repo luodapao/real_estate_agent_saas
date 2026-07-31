@@ -819,6 +819,28 @@ class HouseService:
         finally:
             self.redis.delete(lock_key)
     
+    def update_house(self, house_id: int, update_data: dict, 
+                      operator_id: int) -> SaleHouse:
+        """更新房源信息"""
+        house = SaleHouseDAO.get_house_by_id(self.db, house_id, self.tenant)
+        if not house:
+            raise BusinessError("房源不存在")
+        
+        # 更新房源
+        updated_house = SaleHouseDAO.update_house(self.db, house, update_data)
+        
+        # 记录操作日志
+        self._create_operation_log(
+            operator_id, "update_house", 
+            f"更新房源：{house.house_code}", 
+            True
+        )
+        
+        # 清除缓存
+        self._clear_house_cache(house.project_id)
+        
+        return updated_house
+    
     def _validate_status_transition(self, current_status: int, new_status: int):
         """验证状态流转"""
         # 正向流转：1(可售) -> 2(锁定) -> 3(已定) -> 4(已售)

@@ -271,13 +271,13 @@ async def get_houses_list(
     """获取房源列表"""
     try:
         service = HouseService(db, current_user['tenant'])
-        filters = {'project_id': project_id}
+        filters = {}
         if building_id:
             filters['building_id'] = building_id
         if unit_id:
             filters['unit_id'] = unit_id
         
-        result = service.get_houses_list(page, page_size, filters)
+        result = service.get_houses_list(project_id, page, page_size, filters)
         return success_response(data=result)
     except Exception as e:
         return error_response(-1, str(e))

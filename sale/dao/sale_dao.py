@@ -324,6 +324,18 @@ class SaleHouseDAO:
         }
     
     @staticmethod
+    def update_house(db: Session, house: SaleHouse, update_data: dict) -> SaleHouse:
+        """更新房源信息"""
+        for key, value in update_data.items():
+            if hasattr(house, key):
+                setattr(house, key, value)
+        house.version += 1
+        house.update_time = datetime.now()
+        db.commit()
+        db.refresh(house)
+        return house
+
+    @staticmethod
     def update_house_status(db: Session, house: SaleHouse, new_status: int, 
                            lock_user_id: Optional[int] = None) -> SaleHouse:
         """更新房源状态"""
