@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
-from core.db_base import get_db
+from core.db_base import get_sale_db as get_db
 from core.auth_middleware import get_current_user
 from config.exception import success_response, error_response
 

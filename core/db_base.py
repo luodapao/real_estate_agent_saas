@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from config.settings import DB_CONFIG
 
-# 构建主数据库连接URL
+# 构建主数据库连接URL（admin）
 DATABASE_URL = f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['database']}?charset=utf8mb4"
 
 # 创建主数据库引擎
@@ -23,8 +23,26 @@ engine = create_engine(
 # 创建会话工厂
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# 创建基础模型类
+# 创建基础模型类（admin）
 Base = declarative_base()
+
+
+# ========== Sale数据库连接 ==========
+SALE_DB_URL = f"mysql+pymysql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/sale?charset=utf8mb4"
+
+sale_engine = create_engine(
+    SALE_DB_URL,
+    echo=False,
+    pool_size=20,
+    max_overflow=50,
+    pool_timeout=30,
+    pool_recycle=1800
+)
+
+SessionLocalSale = sessionmaker(autocommit=False, autoflush=False, bind=sale_engine)
+
+# 创建基础模型类（sale）
+SaleBase = declarative_base()
 
 
 # ========== Finance数据库连接 ==========
@@ -43,7 +61,7 @@ SessionLocalFinance = sessionmaker(autocommit=False, autoflush=False, bind=finan
 
 
 def get_db():
-    """获取数据库会话（FastAPI依赖注入）"""
+    """获取admin数据库会话（FastAPI依赖注入）"""
     db = SessionLocal()
     try:
         yield db
@@ -51,8 +69,17 @@ def get_db():
         db.close()
 
 
+def get_sale_db():
+    """获取sale数据库会话（FastAPI依赖注入）"""
+    db = SessionLocalSale()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 def get_finance_db():
-    """获取Finance数据库会话（FastAPI依赖注入）"""
+    """获取finance数据库会话（FastAPI依赖注入）"""
     db = SessionLocalFinance()
     try:
         yield db

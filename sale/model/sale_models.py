@@ -7,7 +7,7 @@ from sqlalchemy import Column, BigInteger, String, Integer, DateTime, Numeric, T
 Decimal = Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from core.db_base import Base
+from core.db_base import SaleBase as Base
 
 
 # ========== 1. 楼盘销控模块 ==========
