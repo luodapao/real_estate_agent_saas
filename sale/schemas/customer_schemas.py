@@ -2,7 +2,8 @@
 房地产SaaS销售管理系统 - 客户全生命周期管理模块数据模型
 """
 
-from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
+from pydantic import BaseModel, Field
+from common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 
@@ -142,9 +143,10 @@ class VisitResponse(ORMBaseModel):
 class FollowCreate(BaseModel):
     """创建跟进记录请求模型"""
     customer_id: int = Field(..., description="客户ID")
-    follow_type: str = Field(..., description="跟进类型（电话/微信/上门）")
-    follow_time: str = Field(..., description="跟进时间")
+    follow_method: str = Field(..., description="跟进方式（电话/微信/面谈/短信）")
+    follow_time: Optional[str] = Field(None, description="跟进时间")
     follow_content: str = Field(..., description="跟进内容")
+    customer_intention: Optional[str] = Field(None, description="客户意向度")
     next_follow_time: Optional[str] = Field(None, description="下次跟进时间")
     follow_result: Optional[str] = Field(None, description="跟进结果")
 
@@ -153,9 +155,10 @@ class FollowResponse(ORMBaseModel):
     """跟进记录响应模型"""
     follow_id: int
     customer_id: int
-    follow_type: str
+    follow_method: str
     follow_time: Optional[datetime]
     follow_content: str
+    customer_intention: Optional[str]
     next_follow_time: Optional[datetime]
     follow_result: Optional[str]
     follow_user_id: int
@@ -164,6 +167,11 @@ class FollowResponse(ORMBaseModel):
 
 
 # ========== 公海客户模型 ==========
+
+class SeaCustomerRequest(BaseModel):
+    """公海客户操作请求模型"""
+    customer_id: int = Field(..., description="客户ID")
+
 
 class SeaCustomerResponse(ORMBaseModel):
     """公海客户响应模型"""

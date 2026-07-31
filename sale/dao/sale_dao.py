@@ -839,6 +839,18 @@ class SaleFollowRemindDAO:
                 SaleFollowRemind.remind_time < now
             )
         ).all()
+    
+    @staticmethod
+    def get_reminds_by_customer(db: Session, customer_id: int, tenant: str) -> List[SaleFollowRemind]:
+        """获取客户的所有跟进提醒"""
+        return db.query(SaleFollowRemind).filter(
+            and_(
+                SaleFollowRemind.tenant == tenant,
+                SaleFollowRemind.customer_id == customer_id,
+                SaleFollowRemind.is_del == 0,
+                SaleFollowRemind.remind_status == 0  # 待跟进
+            )
+        ).all()
 
 
 class SaleBlacklistDAO:

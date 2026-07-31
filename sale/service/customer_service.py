@@ -239,6 +239,32 @@ class CustomerService:
         
         return result
     
+    def transfer_customer(self, customer_id: int, target_user_id: int, 
+                          operator_id: int = None) -> SaleCustomer:
+        """转移客户归属"""
+        customer = SaleCustomerDAO.get_customer_by_id(self.db, customer_id, self.tenant)
+        if not customer:
+            raise BusinessError("客户不存在")
+        
+        # 检查目标用户是否存在
+        # TODO: 调用用户服务验证目标用户是否存在
+        
+        # 更新客户归属
+        update_data = {
+            'belong_user_id': target_user_id,
+            'customer_status': 1  # 跟进中
+        }
+        updated_customer = SaleCustomerDAO.update_customer(self.db, customer, update_data)
+        
+        # 记录操作日志
+        self._create_operation_log(
+            operator_id, "transfer_customer", 
+            f"转移客户归属：{customer.customer_name} -> 用户ID {target_user_id}", 
+            True
+        )
+        
+        return updated_customer
+    
     def release_to_sea(self, customer_id: int, operator_id: int = None) -> bool:
         """释放客户到公海"""
         customer = SaleCustomerDAO.get_customer_by_id(self.db, customer_id, self.tenant)
@@ -856,6 +882,73 @@ class SeaCustomerService:
     def __init__(self, db: Session, tenant: str):
         self.db = db
         self.tenant = tenant
+    
+    def add_customer_to_sea(self, customer_id: int, operator_id: int = None) -> bool:
+        """添加客户到公海（释放客户归属）"""
+        customer = SaleCustomerDAO.get_customer_by_id(self.db, customer_id, self.tenant)
+        if not customer:
+            raise BusinessError("客户不存在")
+        
+        # 已在公海的客户不能重复添加
+        if customer.customer_status == 4:
+            raise BusinessError("客户已在公海中")
+        
+        # 已成交、已流失客户禁止释放
+        if customer.customer_status in [2, 3]:
+            raise BusinessError("已成交、已流失客户禁止释放到公海")
+        
+        # 释放到公海
+        result = SaleCustomerDAO.release_to_sea(self.db, customer_id, self.tenant)
+        
+        if result:
+            # 终止所有跟进提醒
+            reminds = SaleFollowRemindDAO.get_reminds_by_customer(self.db, customer_id, self.tenant)
+            for remind in reminds:
+                SaleFollowRemindDAO.complete_remind(self.db, remind.remind_id, self.tenant)
+            
+            # 记录操作日志
+            log_data = {
+                'tenant': self.tenant,
+                'user_id': operator_id,
+                'operation_type': 'add_customer_to_sea',
+                'operation_content': f"添加客户到公海：{customer.customer_name}",
+                'operation_result': 1,
+                'create_time': datetime.now()
+            }
+            SaleStatDailyLogsDAO.create_log(self.db, log_data)
+        
+        return result
+    
+    def pick_customer_from_sea(self, customer_id: int, user_id: int, 
+                               operator_id: int = None) -> SaleCustomer:
+        """从公海认领客户"""
+        customer = SaleCustomerDAO.get_customer_by_id(self.db, customer_id, self.tenant)
+        if not customer:
+            raise BusinessError("客户不存在")
+        
+        # 检查客户是否在公海
+        if customer.customer_status != 4:
+            raise BusinessError("客户不在公海中，无法认领")
+        
+        # 认领客户
+        update_data = {
+            'belong_user_id': user_id,
+            'customer_status': 1  # 跟进中
+        }
+        updated_customer = SaleCustomerDAO.update_customer(self.db, customer, update_data)
+        
+        # 记录操作日志
+        log_data = {
+            'tenant': self.tenant,
+            'user_id': operator_id or user_id,
+            'operation_type': 'pick_customer_from_sea',
+            'operation_content': f"从公海认领客户：{customer.customer_name}",
+            'operation_result': 1,
+            'create_time': datetime.now()
+        }
+        SaleStatDailyLogsDAO.create_log(self.db, log_data)
+        
+        return updated_customer
     
     def get_sea_customers_list(self, page: int = 1, page_size: int = 20,
                               filters: Optional[Dict] = None) -> dict:

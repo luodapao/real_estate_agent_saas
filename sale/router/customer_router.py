@@ -2,7 +2,7 @@
 房地产SaaS销售管理系统 - 客户全生命周期管理模块路由
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Body
 from sqlalchemy.orm import Session
 from typing import Optional, List
 
@@ -11,6 +11,9 @@ from core.auth_middleware import get_current_user
 from config.exception import success_response, error_response
 
 from sale.service.customer_service import CustomerService, ReportVisitService, FollowService, SeaCustomerService
+from sale.schemas.customer_schemas import (
+    VisitConfirmRequest, FollowCreate, CustomerTransferRequest, SeaCustomerRequest
+)
 
 router = APIRouter(prefix="/customer", tags=["客户管理"])
 
@@ -119,15 +122,14 @@ async def delete_customer(
 
 @router.post("/transfer")
 async def transfer_customer(
-    customer_id: int,
-    target_user_id: int,
+    transfer_data: CustomerTransferRequest = Body(...),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """转移客户归属"""
     try:
         service = CustomerService(db, current_user['tenant'])
-        service.transfer_customer(customer_id, target_user_id, current_user['user_id'])
+        service.transfer_customer(transfer_data.customer_id, transfer_data.target_user_id, current_user['user_id'])
         return success_response(message="客户转移成功")
     except Exception as e:
         return error_response(-1, str(e))
@@ -180,14 +182,14 @@ async def get_reports_list(
 @router.post("/visit/confirm/{report_id}")
 async def confirm_visit(
     report_id: int,
-    visit_data: dict,
+    visit_data: VisitConfirmRequest = Body(...),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """确认到访"""
     try:
         service = ReportVisitService(db, current_user['tenant'])
-        visit = service.confirm_visit(report_id, visit_data, current_user['user_id'])
+        visit = service.confirm_visit(report_id, visit_data.model_dump(), current_user['user_id'])
         return success_response(data={
             "visit_id": visit.visit_id,
             "visit_time": visit.visit_time.isoformat() if visit.visit_time else None
@@ -224,14 +226,17 @@ async def get_visits_list(
 
 @router.post("/follow/create")
 async def create_follow(
-    follow_data: dict,
+    follow_data: FollowCreate = Body(...),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """创建跟进记录"""
     try:
         service = FollowService(db, current_user['tenant'])
-        follow = service.create_follow(follow_data, current_user['user_id'])
+        follow_dict = follow_data.model_dump()
+        # 将 follow_method 映射到 service 层需要的字段
+        follow_dict['follow_method'] = follow_dict.pop('follow_method', None)
+        follow = service.create_follow(follow_dict, False, current_user['user_id'])
         return success_response(data={
             "follow_id": follow.follow_id,
             "follow_time": follow.follow_time.isoformat() if follow.follow_time else None
@@ -251,7 +256,8 @@ async def get_follows_list(
     """获取跟进记录列表"""
     try:
         service = FollowService(db, current_user['tenant'])
-        result = service.get_follows_list(customer_id, page, page_size)
+        filters = {'customer_id': customer_id}
+        result = service.get_follows_list(page, page_size, filters)
         return success_response(data=result)
     except Exception as e:
         return error_response(-1, str(e))
@@ -261,14 +267,14 @@ async def get_follows_list(
 
 @router.post("/sea/add")
 async def add_customer_to_sea(
-    customer_id: int,
+    sea_data: SeaCustomerRequest = Body(...),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """添加客户到公海"""
     try:
         service = SeaCustomerService(db, current_user['tenant'])
-        service.add_customer_to_sea(customer_id, current_user['user_id'])
+        service.add_customer_to_sea(sea_data.customer_id, current_user['user_id'])
         return success_response(message="客户已添加到公海")
     except Exception as e:
         return error_response(-1, str(e))
@@ -276,14 +282,14 @@ async def add_customer_to_sea(
 
 @router.post("/sea/pick")
 async def pick_customer_from_sea(
-    customer_id: int,
+    sea_data: SeaCustomerRequest = Body(...),
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
     """从公海认领客户"""
     try:
         service = SeaCustomerService(db, current_user['tenant'])
-        service.pick_customer_from_sea(customer_id, current_user['user_id'])
+        service.pick_customer_from_sea(sea_data.customer_id, current_user['user_id'])
         return success_response(message="客户认领成功")
     except Exception as e:
         return error_response(-1, str(e))
