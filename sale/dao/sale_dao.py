@@ -4,7 +4,7 @@
 """
 
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, or_, func
+from sqlalchemy import and_, or_, func, case
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -303,10 +303,10 @@ class SaleHouseDAO:
         """获取销控面板统计"""
         stats = db.query(
             func.count(SaleHouse.house_id).label('total'),
-            func.sum(func.case((SaleHouse.house_status == 1, 1), else_=0)).label('available'),
-            func.sum(func.case((SaleHouse.house_status == 2, 1), else_=0)).label('locked'),
-            func.sum(func.case((SaleHouse.house_status == 3, 1), else_=0)).label('reserved'),
-            func.sum(func.case((SaleHouse.house_status == 4, 1), else_=0)).label('sold')
+            func.sum(case((SaleHouse.house_status == 1, 1), else_=0)).label('available'),
+            func.sum(case((SaleHouse.house_status == 2, 1), else_=0)).label('locked'),
+            func.sum(case((SaleHouse.house_status == 3, 1), else_=0)).label('reserved'),
+            func.sum(case((SaleHouse.house_status == 4, 1), else_=0)).label('sold')
         ).filter(
             and_(
                 SaleHouse.project_id == project_id,
@@ -626,10 +626,10 @@ class SaleReportDAO:
         """获取报备统计数据"""
         stats = db.query(
             func.count(SaleReport.report_id).label('total'),
-            func.sum(func.case((SaleReport.report_status == 0, 1), else_=0)).label('pending'),  # 待确客
-            func.sum(func.case((SaleReport.report_status == 1, 1), else_=0)).label('valid'),    # 有效
-            func.sum(func.case((SaleReport.report_status == 2, 1), else_=0)).label('invalid'),  # 失效
-            func.sum(func.case((SaleReport.report_status == 3, 1), else_=0)).label('expired')  # 过期
+            func.sum(case((SaleReport.report_status == 0, 1), else_=0)).label('pending'),  # 待确客
+            func.sum(case((SaleReport.report_status == 1, 1), else_=0)).label('valid'),    # 有效
+            func.sum(case((SaleReport.report_status == 2, 1), else_=0)).label('invalid'),  # 失效
+            func.sum(case((SaleReport.report_status == 3, 1), else_=0)).label('expired')  # 过期
         ).filter(
             and_(
                 SaleReport.project_id == project_id,
@@ -703,9 +703,9 @@ class SaleVisitDAO:
         """获取到访统计数据"""
         stats = db.query(
             func.count(SaleVisit.visit_id).label('total'),
-            func.sum(func.case((SaleVisit.visit_status == 1, 1), else_=0)).label('valid'),
-            func.sum(func.case((SaleVisit.visit_status == 2, 1), else_=0)).label('invalid'),
-            func.sum(func.case((SaleVisit.visit_status == 3, 1), else_=0)).label('fake')
+            func.sum(case((SaleVisit.visit_status == 1, 1), else_=0)).label('valid'),
+            func.sum(case((SaleVisit.visit_status == 2, 1), else_=0)).label('invalid'),
+            func.sum(case((SaleVisit.visit_status == 3, 1), else_=0)).label('fake')
         ).filter(
             and_(
                 SaleVisit.project_id == project_id,

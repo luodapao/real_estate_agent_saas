@@ -744,7 +744,6 @@ class HouseService:
             lock_data = {
                 'tenant': self.tenant,
                 'house_id': house_id,
-                'project_id': house.project_id,
                 'customer_id': customer_id,
                 'lock_user_id': user_id,
                 'lock_time': datetime.now(),
