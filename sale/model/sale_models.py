@@ -386,6 +386,7 @@ class SaleHouseLock(Base):
     lock_id = Column(BigInteger, primary_key=True, autoincrement=True, comment='锁定ID')
     tenant = Column(String(32), nullable=False, index=True, comment='租户编码')
     house_id = Column(BigInteger, ForeignKey('sale_house.house_id'), nullable=False, comment='房源ID')
+    project_id = Column(BigInteger, ForeignKey('sale_project.project_id'), nullable=False, comment='楼盘ID')
     customer_id = Column(BigInteger, ForeignKey('sale_customer.customer_id'), nullable=False, comment='客户ID')
     lock_user_id = Column(BigInteger, comment='锁定人ID')
     lock_time = Column(DateTime, server_default=func.now(), comment='锁定时间')
