@@ -674,7 +674,7 @@ class SaleVisitDAO:
     
     @staticmethod
     def get_visits_list(db: Session, tenant: str, skip: int = 0, limit: int = 100,
-                       filters: Optional[Dict] = None) -> List[SaleVisit]:
+                       filters: Optional[Dict] = None, order_by: Optional[str] = None) -> List[SaleVisit]:
         """获取到访列表"""
         query = db.query(SaleVisit).filter(
             and_(
@@ -694,6 +694,17 @@ class SaleVisitDAO:
                 query = query.filter(SaleVisit.visit_time >= filters['start_date'])
             if filters.get('end_date'):
                 query = query.filter(SaleVisit.visit_time <= filters['end_date'])
+        
+        # 排序：支持 "字段 asc/desc"，默认按到访时间倒序
+        column_name = 'visit_time'
+        direction = 'desc'
+        if order_by:
+            parts = order_by.split()
+            column_name = parts[0]
+            if len(parts) > 1:
+                direction = parts[1].lower()
+        order_column = getattr(SaleVisit, column_name, SaleVisit.visit_time)
+        query = query.order_by(order_column.asc() if direction == 'asc' else order_column.desc())
         
         return query.offset(skip).limit(limit).all()
     
