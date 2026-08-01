@@ -1886,7 +1886,8 @@ class SaleReceiptDAO:
         """更新发票信息"""
         for key, value in update_data.items():
             setattr(receipt, key, value)
-        receipt.version += 1
+        if hasattr(receipt, 'version') and receipt.version is not None:
+            receipt.version += 1
         db.commit()
         db.refresh(receipt)
         return receipt
