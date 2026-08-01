@@ -369,11 +369,8 @@ async def update_receipt(
     """更新发票记录"""
     try:
         service = ReceiptService(db, current_user['tenant'])
-        receipt = service.update_receipt(receipt_id, update_data, current_user['user_id'])
-        return success_response(data={
-            "receipt_id": receipt.receipt_id,
-            "receipt_no": receipt.receipt_no
-        }, message="发票记录更新成功")
+        result = service.update_receipt(receipt_id, update_data, current_user['user_id'])
+        return success_response(data=result, message="发票记录更新成功")
     except Exception as e:
         return error_response(-1, str(e))
 
