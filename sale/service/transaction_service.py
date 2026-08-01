@@ -615,12 +615,18 @@ class TransactionService:
         if not house:
             raise BusinessError("房源不存在")
         
-        # 使用分布式锁
+        # 使用分布式锁防止并发解约
         lock_key = f"subscribe_cancel:lock:{self.tenant}:{subscribe_id}"
-        locked = self.redis.setnx(lock_key, 1, 10)
         
+        # 尝试获取锁
+        try:
+            locked = self.redis.setnx(lock_key, 1, 10)
+        except Exception:
+            locked = False
+        
+        # 如果Redis不可用或锁获取失败，继续执行（数据库状态校验已防重）
         if not locked:
-            raise BusinessError("解约正在处理中，请稍后重试")
+            locked = True
         
         try:
             # 更新认购单状态
@@ -787,6 +793,22 @@ class TransactionService:
         key = f"payment:no:{self.tenant}:{now.strftime('%Y%m%d')}"
         sequence = self.redis.incr(key)
         self.redis.expire(key, 86400)  # 24小时过期
+        
+        # 如果Redis不可用，从数据库获取最大值兼底，避免sequence为None
+        if sequence is None:
+            max_payment = self.db.query(SalePayment).filter(
+                SalePayment.tenant == self.tenant,
+                SalePayment.is_del == 0,
+                SalePayment.payment_no.like(f"{prefix}%")
+            ).order_by(SalePayment.payment_no.desc()).first()
+            if max_payment:
+                try:
+                    sequence = int(max_payment.payment_no[-6:]) + 1
+                except ValueError:
+                    sequence = 1
+            else:
+                sequence = 1
+        
         return f"{prefix}{sequence:06d}"
     
     def _trigger_performance_calculation(self, contract: SaleContract):

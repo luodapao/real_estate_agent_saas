@@ -1831,7 +1831,9 @@ class SaleLoanDAO:
         """更新贷款信息"""
         for key, value in update_data.items():
             setattr(loan, key, value)
-        loan.version += 1
+        # SaleLoan 表无乐观锁 version 字段，防御性判断避免 AttributeError
+        if hasattr(loan, 'version') and loan.version is not None:
+            loan.version += 1
         db.commit()
         db.refresh(loan)
         return loan
