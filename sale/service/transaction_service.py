@@ -81,6 +81,10 @@ class TransactionService:
             subscribe_data['subscribe_status'] = 1  # 已认购
             subscribe_data['status'] = 1
             subscribe_data['is_del'] = 0
+            # 销售归属兜底：优先使用请求传入的sale_user_id，
+            # 未传入时以该客户档案的归属销售belong_user_id为准，最后回退到操作人
+            if not subscribe_data.get('sale_user_id'):
+                subscribe_data['sale_user_id'] = customer.belong_user_id or operator_id
             
             subscribe = SaleSubscribeDAO.create_subscribe(self.db, subscribe_data)
             
