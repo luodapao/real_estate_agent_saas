@@ -428,7 +428,7 @@ class StatisticsService:
         query = self.db.query(func.count(SaleVisit.visit_id)).filter(
             and_(
                 SaleVisit.project_id == project_id,
-                SaleVisit.receive_user_id == user_id,
+                SaleVisit.sale_user_id == user_id,
                 SaleVisit.tenant == self.tenant,
                 SaleVisit.is_del == 0,
                 SaleVisit.visit_status == 1
@@ -529,7 +529,7 @@ class StatisticsService:
         query = self.db.query(func.count(SaleVisit.visit_id)).filter(
             and_(
                 SaleVisit.project_id == project_id,
-                SaleVisit.receive_user_id.in_(member_ids),
+                SaleVisit.sale_user_id.in_(member_ids),
                 SaleVisit.tenant == self.tenant,
                 SaleVisit.is_del == 0,
                 SaleVisit.visit_status == 1

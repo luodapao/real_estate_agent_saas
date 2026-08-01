@@ -48,7 +48,7 @@ async def get_customers_list(
     customer_name: Optional[str] = None,
     mobile: Optional[str] = None,
     customer_status: Optional[int] = None,
-    belong_user_id: Optional[int] = None,
+    belong_sale_user_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -62,8 +62,8 @@ async def get_customers_list(
             filters['mobile'] = mobile
         if customer_status is not None:
             filters['customer_status'] = customer_status
-        if belong_user_id:
-            filters['belong_user_id'] = belong_user_id
+        if belong_sale_user_id:
+            filters['belong_sale_user_id'] = belong_sale_user_id
         
         result = service.get_customers_list(page, page_size, filters)
         return success_response(data=result)

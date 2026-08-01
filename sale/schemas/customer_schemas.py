@@ -22,7 +22,7 @@ class CustomerCreate(BaseModel):
     address: Optional[str] = Field(None, description="详细地址", max_length=200)
     customer_status: Optional[int] = Field(1, description="客户状态（1：潜客 2：意向 3：认购 4：签约 5：成交 6：无效）")
     customer_source: Optional[str] = Field("自然到访", description="客户来源", max_length=50)
-    belong_user_id: Optional[int] = Field(None, description="归属销售ID")
+    belong_sale_user_id: Optional[int] = Field(None, description="归属销售ID")
     remark: Optional[str] = Field(None, description="备注")
     tags: Optional[List[str]] = Field(None, description="标签列表")
     demands: Optional[List[dict]] = Field(None, description="购房需求列表")
@@ -39,7 +39,7 @@ class CustomerUpdate(BaseModel):
     address: Optional[str] = Field(None, description="详细地址", max_length=200)
     customer_status: Optional[int] = Field(None, description="客户状态")
     customer_source: Optional[str] = Field(None, description="客户来源", max_length=50)
-    belong_user_id: Optional[int] = Field(None, description="归属销售ID")
+    belong_sale_user_id: Optional[int] = Field(None, description="归属销售ID")
     remark: Optional[str] = Field(None, description="备注")
 
 
@@ -57,7 +57,7 @@ class CustomerResponse(ORMBaseModel):
     address: Optional[str]
     customer_status: int
     customer_source: Optional[str]
-    belong_user_id: Optional[int]
+    belong_sale_user_id: Optional[int]
     belong_user_name: Optional[str]
     remark: Optional[str]
     create_time: Optional[datetime]
@@ -111,7 +111,7 @@ class VisitConfirmRequest(BaseModel):
     """确认到访请求模型"""
     visit_time: Optional[str] = Field(None, description="到访时间")
     visit_type: Optional[str] = Field("首次到访", description="到访类型（首次到访/多次到访）")
-    receive_user_id: Optional[int] = Field(None, description="接待销售ID")
+    sale_user_id: Optional[int] = Field(None, description="接待销售ID")
 
 
 class VisitResponse(ORMBaseModel):
@@ -121,7 +121,7 @@ class VisitResponse(ORMBaseModel):
     customer_id: int
     project_id: int
     report_id: Optional[int]
-    receive_user_id: Optional[int]
+    sale_user_id: Optional[int]
     visit_time: Optional[datetime]
     visit_type: Optional[str]
     reception_score: Optional[float]
@@ -197,7 +197,7 @@ class CustomerDetailResponse(ORMBaseModel):
     address: Optional[str]
     customer_status: int
     customer_source: Optional[str]
-    belong_user_id: Optional[int]
+    belong_sale_user_id: Optional[int]
     belong_user_name: Optional[str]
     remark: Optional[str]
     create_time: Optional[datetime]

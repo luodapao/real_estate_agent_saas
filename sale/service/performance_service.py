@@ -434,7 +434,7 @@ class PerformanceService:
             func.count(SaleCustomer.customer_id).label('customer_count')
         ).filter(
             and_(
-                SaleCustomer.belong_user_id == user_id,
+                SaleCustomer.belong_sale_user_id == user_id,
                 SaleCustomer.tenant == self.tenant,
                 SaleCustomer.is_del == 0,
                 SaleCustomer.create_time >= start_date,

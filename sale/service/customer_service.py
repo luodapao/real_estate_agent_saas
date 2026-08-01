@@ -111,7 +111,7 @@ class CustomerService:
             'age': customer.age,
             'customer_level': customer.customer_level,
             'customer_source': customer.customer_source,
-            'belong_user_id': customer.belong_user_id,
+            'belong_sale_user_id': customer.belong_sale_user_id,
             'belong_team_id': customer.belong_team_id,
             'first_visit_time': customer.first_visit_time.isoformat() if customer.first_visit_time else None,
             'last_visit_time': customer.last_visit_time.isoformat() if customer.last_visit_time else None,
@@ -156,7 +156,7 @@ class CustomerService:
                 'mobile': self._mask_mobile(c.mobile),
                 'customer_level': c.customer_level,
                 'customer_source': c.customer_source,
-                'belong_user_id': c.belong_user_id,
+                'belong_sale_user_id': c.belong_sale_user_id,
                 'belong_team_id': c.belong_team_id,
                 'customer_status': c.customer_status,
                 'last_follow_time': c.last_follow_time.isoformat() if c.last_follow_time else None,
@@ -173,13 +173,13 @@ class CustomerService:
         
         # 已成交客户禁止修改核心信息
         if customer.customer_status == 2:  # 已成交
-            protected_fields = ['mobile', 'id_card', 'belong_user_id']
+            protected_fields = ['mobile', 'id_card', 'belong_sale_user_id']
             for field in protected_fields:
                 if field in update_data and update_data[field] != getattr(customer, field):
                     raise BusinessError("已成交客户禁止修改核心信息")
         
         # 关键信息变更记录审计日志
-        key_fields = ['mobile', 'id_card', 'belong_user_id', 'belong_team_id']
+        key_fields = ['mobile', 'id_card', 'belong_sale_user_id', 'belong_team_id']
         for field in key_fields:
             if field in update_data and update_data[field] != getattr(customer, field):
                 self._create_operation_log(
@@ -251,7 +251,7 @@ class CustomerService:
         
         # 更新客户归属
         update_data = {
-            'belong_user_id': target_user_id,
+            'belong_sale_user_id': target_user_id,
             'customer_status': 1  # 跟进中
         }
         updated_customer = SaleCustomerDAO.update_customer(self.db, customer, update_data)
@@ -313,7 +313,7 @@ class CustomerService:
         
         # 领取客户
         update_data = {
-            'belong_user_id': user_id,
+            'belong_sale_user_id': user_id,
             'belong_team_id': team_id,
             'customer_status': 1  # 跟进中
         }
@@ -649,7 +649,7 @@ class ReportVisitService:
                 'customer_id': v.customer_id,
                 'project_id': v.project_id,
                 'report_id': v.report_id,
-                'receive_user_id': v.receive_user_id,
+                'sale_user_id': v.sale_user_id,
                 'visit_time': v.visit_time.isoformat() if v.visit_time else None,
                 'visit_type': v.visit_type,
                 'reception_score': float(v.reception_score) if v.reception_score else None,
@@ -930,7 +930,7 @@ class SeaCustomerService:
         
         # 认领客户
         update_data = {
-            'belong_user_id': user_id,
+            'belong_sale_user_id': user_id,
             'customer_status': 1  # 跟进中
         }
         updated_customer = SaleCustomerDAO.update_customer(self.db, customer, update_data)

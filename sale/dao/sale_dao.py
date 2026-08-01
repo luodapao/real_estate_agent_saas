@@ -423,8 +423,8 @@ class SaleCustomerDAO:
                 query = query.filter(SaleCustomer.customer_level == filters['customer_level'])
             if filters.get('customer_status'):
                 query = query.filter(SaleCustomer.customer_status == filters['customer_status'])
-            if filters.get('belong_user_id'):
-                query = query.filter(SaleCustomer.belong_user_id == filters['belong_user_id'])
+            if filters.get('belong_sale_user_id'):
+                query = query.filter(SaleCustomer.belong_sale_user_id == filters['belong_sale_user_id'])
             if filters.get('belong_team_id'):
                 query = query.filter(SaleCustomer.belong_team_id == filters['belong_team_id'])
         
@@ -458,7 +458,7 @@ class SaleCustomerDAO:
         customer = SaleCustomerDAO.get_customer_by_id(db, customer_id, tenant)
         if customer:
             customer.customer_status = 4  # 公海状态
-            customer.belong_user_id = None
+            customer.belong_sale_user_id = None
             customer.belong_team_id = None
             customer.version += 1
             db.commit()

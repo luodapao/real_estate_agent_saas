@@ -156,7 +156,7 @@ class SaleCustomer(Base):
     age = Column(Integer, comment='年龄')
     customer_level = Column(String(20), default='C', comment='客户等级：A-高意向 B-中意向 C-低意向')
     customer_source = Column(String(50), comment='客户来源')
-    belong_user_id = Column(BigInteger, comment='归属销售ID')
+    belong_sale_user_id = Column(BigInteger, comment='归属销售ID')
     belong_team_id = Column(BigInteger, comment='归属团队ID')
     first_visit_time = Column(DateTime, comment='首次到访时间')
     last_visit_time = Column(DateTime, comment='最后到访时间')
@@ -175,7 +175,7 @@ class SaleCustomer(Base):
     
     __table_args__ = (
         Index('idx_tenant_mobile', 'tenant', 'mobile'),
-        Index('idx_tenant_belong_user', 'tenant', 'belong_user_id'),
+        Index('idx_tenant_belong_user', 'tenant', 'belong_sale_user_id'),
         Index('idx_tenant_status', 'tenant', 'customer_status'),
         Index('idx_report_id', 'report_id'),
         {'comment': '客户档案表'}
@@ -280,7 +280,7 @@ class SaleVisit(Base):
     customer_id = Column(BigInteger, ForeignKey('sale_customer.customer_id'), nullable=False, comment='客户ID')
     project_id = Column(BigInteger, ForeignKey('sale_project.project_id'), nullable=False, comment='楼盘ID')
     report_id = Column(BigInteger, ForeignKey('sale_report.report_id'), comment='关联报备ID')
-    receive_user_id = Column(BigInteger, comment='接待销售ID')
+    sale_user_id = Column(BigInteger, comment='接待销售ID')
     visit_time = Column(DateTime, server_default=func.now(), comment='到访时间')
     visit_type = Column(String(20), comment='到访类型：首次到访/多次到访')
     reception_score = Column(Decimal(3, 1), comment='接待评分')
@@ -417,7 +417,7 @@ class SaleSubscribe(Base):
     house_id = Column(BigInteger, ForeignKey('sale_house.house_id'), nullable=False, comment='房源ID')
     project_id = Column(BigInteger, ForeignKey('sale_project.project_id'), nullable=False, comment='楼盘ID')
     customer_id = Column(BigInteger, ForeignKey('sale_customer.customer_id'), nullable=False, comment='客户ID')
-    sale_user_id = Column(BigInteger, ForeignKey('sys_user.user_id'), comment='销售ID')
+    sale_user_id = Column(BigInteger, comment='销售ID')
     subscribe_amount = Column(Decimal(12, 2), comment='认购金额（元）')
     subscribe_date = Column(DateTime, comment='认购日期')
     subscribe_status = Column(SmallInteger, default=1, comment='认购状态：1-已认购 2-已签约 3-已解约 4-已退订')
@@ -449,7 +449,7 @@ class SaleContract(Base):
     house_id = Column(BigInteger, ForeignKey('sale_house.house_id'), nullable=False, comment='房源ID')
     project_id = Column(BigInteger, ForeignKey('sale_project.project_id'), nullable=False, comment='楼盘ID')
     customer_id = Column(BigInteger, ForeignKey('sale_customer.customer_id'), nullable=False, comment='客户ID')
-    sale_user_id = Column(BigInteger, ForeignKey('sys_user.user_id'), comment='销售ID')
+    sale_user_id = Column(BigInteger, comment='销售ID')
     contract_amount = Column(Decimal(12, 2), comment='合同金额（元）')
     contract_date = Column(DateTime, comment='签约日期')
     contract_status = Column(SmallInteger, default=1, comment='合同状态：1-待审核 2-已备案 3-已完成 4-已作废')
