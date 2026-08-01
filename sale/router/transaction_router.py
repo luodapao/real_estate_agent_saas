@@ -216,11 +216,8 @@ async def create_payment(
     """创建回款记录"""
     try:
         service = TransactionService(db, current_user['tenant'])
-        payment = service.create_payment(payment_data, current_user['user_id'])
-        return success_response(data={
-            "payment_id": payment.payment_id,
-            "payment_no": payment.payment_no
-        }, message="回款记录创建成功")
+        result = service.create_payment(payment_data, current_user['user_id'])
+        return success_response(data=result, message="回款记录创建成功")
     except Exception as e:
         return error_response(-1, str(e))
 
@@ -287,10 +284,8 @@ async def create_loan(
     """创建贷款记录"""
     try:
         service = LoanService(db, current_user['tenant'])
-        loan = service.create_loan(loan_data, current_user['user_id'])
-        return success_response(data={
-            "loan_id": loan.loan_id
-        }, message="贷款记录创建成功")
+        result = service.create_loan(loan_data, current_user['user_id'])
+        return success_response(data=result, message="贷款记录创建成功")
     except Exception as e:
         return error_response(-1, str(e))
 
@@ -341,11 +336,8 @@ async def create_receipt(
     """创建发票记录"""
     try:
         service = ReceiptService(db, current_user['tenant'])
-        receipt = service.create_receipt(receipt_data, current_user['user_id'])
-        return success_response(data={
-            "receipt_id": receipt.receipt_id,
-            "receipt_no": receipt.receipt_no
-        }, message="发票记录创建成功")
+        result = service.create_receipt(receipt_data, current_user['user_id'])
+        return success_response(data=result, message="发票记录创建成功")
     except Exception as e:
         return error_response(-1, str(e))
 

@@ -466,7 +466,6 @@ class TransactionService:
         
         # 创建回款记录
         payment_data['tenant'] = self.tenant
-        payment_data['project_id'] = project_id
         payment_data['house_id'] = house_id
         payment_data['customer_id'] = customer_id
         payment_data['payment_no'] = self._generate_payment_no()
@@ -1045,6 +1044,7 @@ class ReceiptService:
         
         # 创建发票票据
         receipt_data['tenant'] = self.tenant
+        receipt_data['receipt_no'] = self._generate_receipt_no()
         receipt_data['issue_date'] = datetime.now()
         receipt_data['receipt_status'] = 1  # 正常
         receipt_data['status'] = 1
@@ -1166,6 +1166,25 @@ class ReceiptService:
             'receipt_status': updated_receipt.receipt_status,
             'message': '发票更新成功'
         }
+    
+    def _generate_receipt_no(self) -> str:
+        """生成发票号码（ReceiptService无Redis，采用数据库当日最大值递增兜底）"""
+        now = datetime.now()
+        prefix = f"INV{now.strftime('%Y%m%d')}"
+        # 查询当日该租户已有的最大发票号，递增生成序列号
+        max_receipt = self.db.query(SaleReceipt).filter(
+            SaleReceipt.tenant == self.tenant,
+            SaleReceipt.is_del == 0,
+            SaleReceipt.receipt_no.like(f"{prefix}%")
+        ).order_by(SaleReceipt.receipt_no.desc()).first()
+        if max_receipt and max_receipt.receipt_no:
+            try:
+                sequence = int(max_receipt.receipt_no[-6:]) + 1
+            except (ValueError, TypeError):
+                sequence = 1
+        else:
+            sequence = 1
+        return f"{prefix}{sequence:06d}"
     
     def _create_operation_log(self, user_id: int, operation_type: str, 
                              operation_content: str, operation_result: bool):
