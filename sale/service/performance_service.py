@@ -196,7 +196,7 @@ class TeamService:
                         operator_id: int = None) -> SaleTeamMember:
         """添加团队成员（生产级：团队有效性校验 + 用户唯一性校验）"""
         from admin.model.sys_user import SysUser
-        from admin.dao.sys_user_dao import SysUserDAO
+        from admin.dao.user_dao import UserDAO
         
         team = SaleTeamDAO.get_team_by_id(self.db, team_id, self.tenant)
         if not team:
@@ -205,7 +205,7 @@ class TeamService:
         if team.team_status != 1:
             raise BusinessError("团队状态异常，无法添加成员")
         
-        sys_user = SysUserDAO.get_user_by_id(self.db, user_id)
+        sys_user = UserDAO.get(self.db, user_id)
         if not sys_user:
             raise BusinessError("用户不存在")
         

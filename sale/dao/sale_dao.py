@@ -1733,6 +1733,17 @@ class SalePerformanceTargetDAO:
                 query = query.filter(SalePerformanceTarget.target_team_id == filters['target_team_id'])
         
         return query.offset(skip).limit(limit).all()
+    
+    @staticmethod
+    def update_target(db: Session, target: SalePerformanceTarget, update_data: dict) -> SalePerformanceTarget:
+        """更新业绩目标"""
+        for key, value in update_data.items():
+            setattr(target, key, value)
+        if hasattr(target, 'version') and target.version is not None:
+            target.version += 1
+        db.commit()
+        db.refresh(target)
+        return target
 
 
 class SaleSalesCommissionDAO:
