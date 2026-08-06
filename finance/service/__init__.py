@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - Finance模块Service包初始化
 """
 from .archive_service import ArchiveService

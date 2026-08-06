@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - 佣金支付模块路由
 """
 
@@ -364,4 +364,3 @@ async def delete_sales_bonus_pay(
         return error_response(-1, "内部销售提成付款单不存在")
     except Exception as e:
         return error_response(-1, str(e))
-

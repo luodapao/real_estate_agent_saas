@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - 票据税务合规模块路由
 """
 
@@ -349,7 +349,7 @@ async def delete_maintenance_fund_ledger(
     """删除维修基金台账"""
     try:
         result = InvoiceService.delete_maintenance_fund(db, current_user['tenant'], id)
-        if success:
+        if result:
             return success_response(message="维修基金台账删除成功")
         return error_response(-1, "维修基金台账不存在")
     except Exception as e:
@@ -432,7 +432,7 @@ async def delete_tax_declaration_record(
     """删除税务申报记录"""
     try:
         result = InvoiceService.delete_tax_declare(db, current_user['tenant'], id)
-        if success:
+        if result:
             return success_response(message="税务申报记录删除成功")
         return error_response(-1, "税务申报记录不存在")
     except Exception as e:

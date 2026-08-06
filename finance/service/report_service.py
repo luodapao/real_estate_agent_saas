@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - 财务统计报表服务层
 """
 from typing import List, Optional
@@ -413,4 +413,3 @@ class ReportService:
             page_size=page_size,
             items=[FinancialReportResponse.from_orm(item) for item in items]
         )
-

@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - 资金对账模块路由
 """
 
@@ -374,4 +374,3 @@ async def delete_channel_reconcile(
         return error_response(-1, "渠道月度对账记录不存在")
     except Exception as e:
         return error_response(-1, str(e))
-

@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - 财务统计报表模块路由
 """
 
@@ -765,4 +765,3 @@ async def delete_financial_report(
         return error_response(-1, "财务报表主表不存在")
     except Exception as e:
         return error_response(-1, str(e))
-

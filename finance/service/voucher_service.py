@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - 会计凭证服务层
 """
 from typing import List, Optional

@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - 应收应付往来台账服务层
 """
 from typing import List, Optional
@@ -230,4 +230,3 @@ class ArApService:
             size=page_request.size,
             items=[OtherLoanResponse.from_orm(item) for item in items]
         )
-

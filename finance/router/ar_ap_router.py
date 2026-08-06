@@ -1,4 +1,4 @@
-﻿﻿"""
+"""
 房地产SaaS财务管理系统 - 应收应付往来台账模块路由
 """
 
@@ -400,4 +400,3 @@ async def delete_other_loan(
         return error_response(-1, "其他往来款台账不存在")
     except Exception as e:
         return error_response(-1, str(e))
-
