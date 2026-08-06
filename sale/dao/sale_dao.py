@@ -1104,6 +1104,26 @@ class SaleContractDAO:
         return query.offset(skip).limit(limit).all()
     
     @staticmethod
+    def get_contracts_count(db: Session, tenant: str, filters: Optional[Dict] = None) -> int:
+        """获取合同数量"""
+        query = db.query(SaleContract).filter(
+            and_(
+                SaleContract.tenant == tenant,
+                SaleContract.is_del == 0
+            )
+        )
+        
+        if filters:
+            if filters.get('project_id'):
+                query = query.filter(SaleContract.project_id == filters['project_id'])
+            if filters.get('customer_id'):
+                query = query.filter(SaleContract.customer_id == filters['customer_id'])
+            if filters.get('contract_status'):
+                query = query.filter(SaleContract.contract_status == filters['contract_status'])
+        
+        return query.count()
+    
+    @staticmethod
     def update_contract(db: Session, contract: SaleContract, update_data: dict) -> SaleContract:
         """更新合同"""
         for key, value in update_data.items():
