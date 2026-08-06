@@ -130,7 +130,7 @@ class TransactionService:
         total = SaleSubscribeDAO.get_subscribes_count(self.db, self.tenant, filters)
         
         return {
-            'list': [{
+            'data': [{
                 'subscribe_id': s.subscribe_id,
                 'subscribe_no': s.subscribe_no,
                 'project_id': s.project_id,
@@ -316,7 +316,7 @@ class TransactionService:
             'total': SaleContractDAO.get_contracts_count(self.db, self.tenant, filters),
             'page': page,
             'page_size': page_size,
-            'list': result
+            'data': result
         }
     
     def get_contract_detail(self, contract_id: int) -> dict:
@@ -1112,7 +1112,7 @@ class ReceiptService:
             })
         
         return {
-            'list': result,
+            'data': result,
             'total': len(result),
             'page': page,
             'page_size': page_size
