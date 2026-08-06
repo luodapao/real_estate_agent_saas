@@ -195,8 +195,8 @@ class TeamService:
     def add_team_member(self, team_id: int, user_id: int, member_role: str = 'member', 
                         operator_id: int = None) -> SaleTeamMember:
         """添加团队成员（生产级：团队有效性校验 + 用户唯一性校验）"""
-        from admin.model.sys_user import SysUser
         from admin.dao.user_dao import UserDAO
+        from core.db_base import SessionLocal
         
         team = SaleTeamDAO.get_team_by_id(self.db, team_id, self.tenant)
         if not team:
@@ -205,9 +205,17 @@ class TeamService:
         if team.team_status != 1:
             raise BusinessError("团队状态异常，无法添加成员")
         
-        sys_user = UserDAO.get(self.db, user_id)
-        if not sys_user:
-            raise BusinessError("用户不存在")
+        # sys_user 属于 admin 库，需使用 admin 数据库会话查询，
+        # 不能复用 sale 会话（self.db），否则会执行 SELECT FROM sale.sys_user 报表不存在
+        admin_db = SessionLocal()
+        try:
+            sys_user = UserDAO.get(admin_db, user_id)
+            if not sys_user:
+                raise BusinessError("用户不存在")
+            # 会话关闭前取出所需字段，避免关闭后访问 ORM 属性触发 DetachedInstanceError
+            sys_user_name = sys_user.name
+        finally:
+            admin_db.close()
         
         existing_member = SaleTeamMemberDAO.get_member_by_team_user(
             self.db, self.tenant, team_id, user_id
@@ -240,7 +248,7 @@ class TeamService:
         
         self._create_operation_log(
             operator_id, "add_team_member", 
-            f"添加团队成员：团队({team.team_name}) 用户({sys_user.name})", 
+            f"添加团队成员：团队({team.team_name}) 用户({sys_user_name})", 
             True
         )
         
