@@ -711,11 +711,11 @@ class CommissionBillService:
         if not broker_id or not channel_id:
             raise ValidationError("无法获取有效经纪人和渠道信息，无法生成佣金结算单")
         
-        # 使用分布式锁防止重复生成
+        # 使用分布式锁防止重复生成（唯一token + Lua安全释放，避免误删他人锁）
         lock_key = f"commission:generate:{self.tenant}:{contract_id}"
-        locked = self.redis.setnx(lock_key, 1, 10)
+        lock_token = self.redis.acquire_lock(lock_key, 10)
         
-        if not locked:
+        if not lock_token:
             raise BusinessError("佣金结算单正在生成中，请稍后重试")
         
         try:
@@ -753,7 +753,7 @@ class CommissionBillService:
                 'message': '佣金结算单生成成功'
             }
         finally:
-            self.redis.delete(lock_key)
+            self.redis.release_lock(lock_key, lock_token)
     
     def audit_commission_bill(self, bill_id: int, audit_user_id: int, 
                              operator_id: int = None) -> bool:

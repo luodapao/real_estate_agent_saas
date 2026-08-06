@@ -680,11 +680,11 @@ class SalesCommissionService:
         if contract.record_status != 1:  # 未备案
             raise BusinessError("合同未备案，无法计算提成")
         
-        # 使用分布式锁防止重复计算
+        # 使用分布式锁防止重复计算（唯一token + Lua安全释放）
         lock_key = f"commission:sales:calculate:{self.tenant}:{contract_id}"
-        locked = self.redis.setnx(lock_key, 1, 10)
+        lock_token = self.redis.acquire_lock(lock_key, 10)
         
-        if not locked:
+        if not lock_token:
             raise BusinessError("提成正在计算中，请稍后重试")
         
         try:
@@ -736,7 +736,7 @@ class SalesCommissionService:
                 'message': '销售提成计算成功'
             }
         finally:
-            self.redis.delete(lock_key)
+            self.redis.release_lock(lock_key, lock_token)
     
     def audit_sales_commission(self, commission_id: int, audit_user_id: int, 
                               operator_id: int = None) -> bool:

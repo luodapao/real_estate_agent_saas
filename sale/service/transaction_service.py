@@ -55,21 +55,12 @@ class TransactionService:
         if existing_subscribe:
             raise BusinessError("该房源已有有效认购单")
         
-        # 使用分布式锁防止并发认购
+        # 使用分布式锁防止并发认购（唯一token + Lua安全释放，避免误删他人锁）
         lock_key = f"subscribe:lock:{self.tenant}:{subscribe_data['house_id']}"
         
-        # 尝试获取锁
-        try:
-            locked = self.redis.setnx(lock_key, 1, 10)
-        except Exception:
-            locked = False
-        
-        # 如果Redis不可用或锁获取失败，继续执行（数据库已有唯一性检查）
-        if not locked:
-            locked = True
-        
-        if not locked:
-            raise BusinessError("认购正在处理中，请稍后重试")
+        # 尝试获取锁；获取不到token说明有并发或Redis不可用，
+        # 此时降级放行（数据库已有唯一性检查兜底），token=None时释放为安全no-op
+        lock_token = self.redis.acquire_lock(lock_key, 10)
         
         try:
             # 开始事务
@@ -123,7 +114,7 @@ class TransactionService:
             self.db.rollback()
             raise BusinessError(f"认购创建失败：{str(e)}")
         finally:
-            self.redis.delete(lock_key)
+            self.redis.release_lock(lock_key, lock_token)
     
     def get_subscribes_list(self, page: int = 1, page_size: int = 20, 
                            filters: Optional[Dict] = None) -> dict:
@@ -234,12 +225,13 @@ class TransactionService:
         if existing_contract:
             raise BusinessError("该认购单已有有效合同")
         
-        # 使用分布式锁防止并发签约
+        # 使用分布式锁防止并发签约（唯一token + Lua安全释放，避免误删他人锁）
         lock_key = f"contract:lock:{self.tenant}:{subscribe.subscribe_id}"
-        locked = self.redis.setnx(lock_key, 1, 10)
+        lock_token = self.redis.acquire_lock(lock_key, 10)
         
-        # 如果Redis不可用，跳过锁检查
-        if locked is False:
+        # 获取不到锁：Redis可用时说明存在并发签约，拒绝以防重复；
+        # Redis不可用时降级放行（DB唯一性校验已兜底），避免签约功能整体不可用
+        if not lock_token and self.redis.is_available():
             raise BusinessError("签约正在处理中，请稍后重试")
         
         try:
@@ -295,7 +287,7 @@ class TransactionService:
             self.db.rollback()
             raise BusinessError(f"签约创建失败：{str(e)}")
         finally:
-            self.redis.delete(lock_key)
+            self.redis.release_lock(lock_key, lock_token)
     
     def get_contracts_list(self, page: int = 1, page_size: int = 10, filters: dict = None) -> dict:
         """获取签约合同列表"""
@@ -614,18 +606,12 @@ class TransactionService:
         if not house:
             raise BusinessError("房源不存在")
         
-        # 使用分布式锁防止并发解约
+        # 使用分布式锁防止并发解约（唯一token + Lua安全释放，避免误删他人锁）
         lock_key = f"subscribe_cancel:lock:{self.tenant}:{subscribe_id}"
         
-        # 尝试获取锁
-        try:
-            locked = self.redis.setnx(lock_key, 1, 10)
-        except Exception:
-            locked = False
-        
-        # 如果Redis不可用或锁获取失败，继续执行（数据库状态校验已防重）
-        if not locked:
-            locked = True
+        # 尝试获取锁；获取不到token（并发或Redis不可用）时降级放行
+        # （数据库状态校验已防重），token=None时释放为安全no-op
+        lock_token = self.redis.acquire_lock(lock_key, 10)
         
         try:
             # 更新认购单状态
@@ -661,7 +647,7 @@ class TransactionService:
             self.db.rollback()
             raise BusinessError(f"解约失败：{str(e)}")
         finally:
-            self.redis.delete(lock_key)
+            self.redis.release_lock(lock_key, lock_token)
     
     def get_transaction_list(self, page: int = 1, page_size: int = 20,
                             filters: Optional[Dict] = None) -> dict:

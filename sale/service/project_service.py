@@ -674,11 +674,11 @@ class HouseService:
         # 状态流转校验
         self._validate_status_transition(house.house_status, new_status)
         
-        # 使用分布式锁防止并发状态覆盖
+        # 使用分布式锁防止并发状态覆盖（唯一token + Lua安全释放）
         lock_key = f"house:status:lock:{self.tenant}:{house_id}"
-        locked = self.redis.setnx(lock_key, 1, 10)  # 10秒锁
+        lock_token = self.redis.acquire_lock(lock_key, 10)  # 10秒锁
         
-        if not locked:
+        if not lock_token:
             raise BusinessError("房源状态正在被修改，请稍后重试")
         
         try:
@@ -699,7 +699,7 @@ class HouseService:
             
             return updated_house
         finally:
-            self.redis.delete(lock_key)
+            self.redis.release_lock(lock_key, lock_token)
     
     def lock_house(self, house_id: int, customer_id: int, user_id: int, 
                    expire_minutes: int = 30, operator_id: int = None) -> dict:
@@ -723,20 +723,16 @@ class HouseService:
         if customer and SaleBlacklistDAO.check_is_blacklist(self.db, customer.mobile, self.tenant):
             raise BusinessError("客户在黑名单中，无法锁定房源")
         
-        # 使用分布式锁防止并发锁定
+        # 使用分布式锁防止并发锁定（唯一token + Lua安全释放）
         lock_key = f"house:lock:{self.tenant}:{house_id}"
         
         # 尝试获取锁
-        try:
-            locked = self.redis.setnx(lock_key, 1, 10)
-        except Exception:
-            locked = False
+        lock_token = self.redis.acquire_lock(lock_key, 10)
         
-        # 如果Redis不可用或锁获取失败，但数据库中没有锁定记录，则继续执行
-        if not locked and not active_lock:
-            locked = True
-        
-        if not locked:
+        # 降级策略：Redis不可用时（非锁竞争），DB无锁定记录则放行，由DB兜底
+        if not lock_token and not self.redis.is_available() and not active_lock:
+            pass  # 降级放行
+        elif not lock_token:
             raise BusinessError("房源正在被锁定，请稍后重试")
         
         try:
@@ -777,7 +773,7 @@ class HouseService:
                 'message': '房源锁定成功'
             }
         finally:
-            self.redis.delete(lock_key)
+            self.redis.release_lock(lock_key, lock_token)
     
     def unlock_house(self, house_id: int, operator_id: int, reason: str = None) -> bool:
         """解锁房源"""
@@ -791,11 +787,11 @@ class HouseService:
         if not active_lock:
             raise BusinessError("房源未被锁定")
         
-        # 使用分布式锁
+        # 使用分布式锁（唯一token + Lua安全释放）
         lock_key = f"house:unlock:{self.tenant}:{house_id}"
-        locked = self.redis.setnx(lock_key, 1, 10)
+        lock_token = self.redis.acquire_lock(lock_key, 10)
         
-        if not locked:
+        if not lock_token:
             raise BusinessError("房源正在被解锁，请稍后重试")
         
         try:
@@ -817,7 +813,7 @@ class HouseService:
             
             return True
         finally:
-            self.redis.delete(lock_key)
+            self.redis.release_lock(lock_key, lock_token)
     
     def update_house(self, house_id: int, update_data: dict, 
                       operator_id: int) -> SaleHouse:
