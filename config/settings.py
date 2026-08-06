@@ -81,7 +81,9 @@ WHITE_LIST = [
     {'path': '/docs', 'methods': ['GET', 'HEAD'], 'exact': True},
     {'path': '/redoc', 'methods': ['GET', 'HEAD'], 'exact': True},
     {'path': '/openapi.json', 'methods': ['GET', 'HEAD'], 'exact': True},
-    {'path': '/favicon.ico', 'methods': ['GET', 'HEAD'], 'exact': True}
+    {'path': '/favicon.ico', 'methods': ['GET', 'HEAD'], 'exact': True},
+    # Finance子系统健康检查（仅放开存活探测，业务接口仍需鉴权）
+    {'path': '/api/finance/health', 'methods': ['GET', 'HEAD'], 'exact': True}
 ]
 
 # 允许放行的路径前缀（不需要鉴权）

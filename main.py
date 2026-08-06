@@ -26,8 +26,12 @@ from admin.router.dict_router import router as dict_router
 from admin.router.log_router import router as log_router
 from sale.router.sale_router import router as sale_router
 
+# Finance子系统主路由（聚合全部子路由，全部放开）
+from finance.router.finance_router import router as finance_router
+
 # 导入子系统模型（确保表定义被注册到Base.metadata）
 import sale.model.sale_models
+import finance.model.finance_models
 import admin.model.sys_user
 import admin.model.sys_role
 import admin.model.sys_menu
@@ -79,6 +83,9 @@ def create_app() -> FastAPI:
 
     # ========== 注册预留子系统路由 ==========
     app.include_router(sale_router, prefix="/api", tags=["Sale - 销售管理"])
+
+    # ========== 注册Finance子系统路由（全部放开，统一前缀 /api/finance）==========
+    app.include_router(finance_router, prefix="/api", tags=["Finance - 财务管理"])
 
     return app
 
