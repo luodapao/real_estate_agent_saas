@@ -3,7 +3,8 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
+from pydantic import BaseModel, Field
+from common.schemas.response import ORMBaseModel
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
