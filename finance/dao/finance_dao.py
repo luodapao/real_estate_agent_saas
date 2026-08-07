@@ -310,6 +310,16 @@ class FinTaxRateDAO:
         db.commit()
         db.refresh(record)
         return record
+    
+    @staticmethod
+    def delete(db: Session, id: int, tenant: str) -> bool:
+        record = FinTaxRateDAO.get_by_id(db, id, tenant)
+        if record:
+            record.is_del = 1
+            record.version += 1
+            db.commit()
+            return True
+        return False
 
 
 class FinBankInfoDAO:
@@ -357,6 +367,16 @@ class FinBankInfoDAO:
         db.commit()
         db.refresh(record)
         return record
+    
+    @staticmethod
+    def delete(db: Session, id: int, tenant: str) -> bool:
+        record = FinBankInfoDAO.get_by_id(db, id, tenant)
+        if record:
+            record.is_del = 1
+            record.version += 1
+            db.commit()
+            return True
+        return False
 
 
 class FinDiscountRuleDAO:
@@ -406,6 +426,16 @@ class FinDiscountRuleDAO:
         db.commit()
         db.refresh(record)
         return record
+    
+    @staticmethod
+    def delete(db: Session, id: int, tenant: str) -> bool:
+        record = FinDiscountRuleDAO.get_by_id(db, id, tenant)
+        if record:
+            record.is_del = 1
+            record.version += 1
+            db.commit()
+            return True
+        return False
 
 
 # ==================== 房款收支模块 ====================
