@@ -2,6 +2,7 @@
 房地产SaaS财务管理系统 - 会计凭证服务层
 """
 from typing import List, Optional
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -40,7 +41,7 @@ class VoucherService:
 
         if prefix == "PZ":
             result = db.execute(
-                "SELECT MAX(voucher_no) FROM fin_voucher WHERE tenant = :tenant AND voucher_no LIKE :pattern",
+                text("SELECT MAX(voucher_no) FROM fin_voucher WHERE tenant = :tenant AND voucher_no LIKE :pattern"),
                 {"tenant": tenant, "pattern": f"{prefix}{date_str}%"}
             ).scalar()
 

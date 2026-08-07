@@ -2,6 +2,7 @@
 房地产SaaS财务管理系统 - 项目成本服务层
 """
 from typing import List, Optional
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -49,27 +50,27 @@ class CostService:
         max_no = 0
         if prefix == "FYSQ":
             result = db.execute(
-                "SELECT MAX(expense_no) FROM fin_cost_expense WHERE tenant = :tenant_id AND expense_no LIKE :pattern",
+                text("SELECT MAX(expense_no) FROM fin_cost_expense WHERE tenant = :tenant_id AND expense_no LIKE :pattern"),
                 {"tenant_id": tenant_id, "pattern": f"{prefix}{date_str}%"}
             ).scalar()
         elif prefix == "BX":
             result = db.execute(
-                "SELECT MAX(reimburse_no) FROM fin_expense_reimbursement WHERE tenant = :tenant_id AND reimburse_no LIKE :pattern",
+                text("SELECT MAX(reimburse_no) FROM fin_expense_reimbursement WHERE tenant = :tenant_id AND reimburse_no LIKE :pattern"),
                 {"tenant_id": tenant_id, "pattern": f"{prefix}{date_str}%"}
             ).scalar()
         elif prefix == "FK":
             result = db.execute(
-                "SELECT MAX(pay_no) FROM fin_cost_pay WHERE tenant = :tenant_id AND pay_no LIKE :pattern",
+                text("SELECT MAX(pay_no) FROM fin_cost_pay WHERE tenant = :tenant_id AND pay_no LIKE :pattern"),
                 {"tenant_id": tenant_id, "pattern": f"{prefix}{date_str}%"}
             ).scalar()
         elif prefix == "GGCB":
             result = db.execute(
-                "SELECT MAX(cost_no) FROM fin_ad_cost WHERE tenant = :tenant_id AND cost_no LIKE :pattern",
+                text("SELECT MAX(cost_no) FROM fin_ad_cost WHERE tenant = :tenant_id AND cost_no LIKE :pattern"),
                 {"tenant_id": tenant_id, "pattern": f"{prefix}{date_str}%"}
             ).scalar()
         elif prefix == "GC":
             result = db.execute(
-                "SELECT MAX(cost_no) FROM fin_project_eng_cost WHERE tenant = :tenant_id AND cost_no LIKE :pattern",
+                text("SELECT MAX(cost_no) FROM fin_project_eng_cost WHERE tenant = :tenant_id AND cost_no LIKE :pattern"),
                 {"tenant_id": tenant_id, "pattern": f"{prefix}{date_str}%"}
             ).scalar()
 

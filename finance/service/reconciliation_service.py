@@ -2,6 +2,7 @@
 房地产SaaS财务管理系统 - 资金对账服务层
 """
 from typing import List, Optional
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from datetime import datetime
 from decimal import Decimal
@@ -46,12 +47,12 @@ class ReconciliationService:
 
         if prefix == "DZ":
             result = db.execute(
-                "SELECT MAX(check_no) FROM fin_bank_check WHERE tenant = :tenant AND check_no LIKE :pattern",
+                text("SELECT MAX(check_no) FROM fin_bank_check WHERE tenant = :tenant AND check_no LIKE :pattern"),
                 {"tenant": tenant, "pattern": f"{prefix}{date_str}%"}
             ).scalar()
         elif prefix == "QD":
             result = db.execute(
-                "SELECT MAX(reconcile_no) FROM fin_channel_reconcile WHERE tenant = :tenant AND reconcile_no LIKE :pattern",
+                text("SELECT MAX(reconcile_no) FROM fin_channel_reconcile WHERE tenant = :tenant AND reconcile_no LIKE :pattern"),
                 {"tenant": tenant, "pattern": f"{prefix}{date_str}%"}
             ).scalar()
 

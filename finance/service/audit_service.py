@@ -2,6 +2,7 @@
 房地产SaaS财务管理系统 - 财务审计追溯服务层
 """
 from typing import List, Optional
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -28,7 +29,7 @@ class AuditService:
         max_no = 0
         
         result = db.execute(
-            "SELECT MAX(operate_no) FROM fin_operate_log WHERE tenant = :tenant AND operate_no LIKE :pattern",
+            text("SELECT MAX(operate_no) FROM fin_operate_log WHERE tenant = :tenant AND operate_no LIKE :pattern"),
             {"tenant": tenant, "pattern": f"{prefix}{date_str}%"}
         ).scalar()
         

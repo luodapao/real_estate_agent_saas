@@ -2,6 +2,7 @@
 房地产SaaS财务管理系统 - 渠道佣金&内部提成支付模块服务层
 """
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from typing import Optional, Tuple, List
 from datetime import datetime
@@ -36,17 +37,17 @@ def generate_doc_no(db: Session, tenant_id: str, prefix: str) -> str:
 
     if prefix == "YJFK":
         result = db.execute(
-            "SELECT MAX(pay_no) FROM fin_commission_pay WHERE tenant = :tenant_id AND pay_no LIKE :pattern",
+            text("SELECT MAX(pay_no) FROM fin_commission_pay WHERE tenant = :tenant_id AND pay_no LIKE :pattern"),
             {"tenant_id": tenant_id, "pattern": f"{prefix}{date_str}%"}
         ).scalar()
     elif prefix == "YJKF":
         result = db.execute(
-            "SELECT MAX(deduct_no) FROM fin_commission_deduct WHERE tenant = :tenant_id AND deduct_no LIKE :pattern",
+            text("SELECT MAX(deduct_no) FROM fin_commission_deduct WHERE tenant = :tenant_id AND deduct_no LIKE :pattern"),
             {"tenant_id": tenant_id, "pattern": f"{prefix}{date_str}%"}
         ).scalar()
     elif prefix == "TC":
         result = db.execute(
-            "SELECT MAX(pay_no) FROM fin_sales_bonus_pay WHERE tenant = :tenant_id AND pay_no LIKE :pattern",
+            text("SELECT MAX(pay_no) FROM fin_sales_bonus_pay WHERE tenant = :tenant_id AND pay_no LIKE :pattern"),
             {"tenant_id": tenant_id, "pattern": f"{prefix}{date_str}%"}
         ).scalar()
 
