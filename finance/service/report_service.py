@@ -16,6 +16,10 @@ from ..dao import (
     FinFinancialReportDAO,
 )
 from ..model.finance_models import (
+    FinCashFlow,
+    FinReceivableStat,
+    FinTaxStat,
+    FinCommissionStat,
     FinCashFlowStatement,
     FinProfitStatement,
     FinBalanceSheet,
@@ -59,12 +63,14 @@ class ReportService:
         生成单据编号（私有方法）
         :param db: 数据库会话
         :param tenant: 租户编码
-        :param prefix: 编号前缀（LLR:现金流量表, LR:利润表, FZ:负债表, CB:财报）
+        :param prefix: 编号前缀（LLR:现金流量表, LR:利润表, FZ:负债表, CB:财报,
+                       TXJ:现金流统计, YSK:应收款统计, SW:税务统计, YJ:佣金统计）
         :return: 生成的单据编号
         """
         date_str = datetime.now().strftime("%Y%m%d")
         max_no = 0
         pattern = f"{prefix}{date_str}%"
+        result = None
 
         if prefix == "LLR":
             result = db.query(func.max(FinCashFlowStatement.statement_no)).filter(
@@ -85,6 +91,26 @@ class ReportService:
             result = db.query(func.max(FinFinancialReport.report_no)).filter(
                 FinFinancialReport.tenant == tenant,
                 FinFinancialReport.report_no.like(pattern)
+            ).scalar()
+        elif prefix == "TXJ":
+            result = db.query(func.max(FinCashFlow.stat_batch)).filter(
+                FinCashFlow.tenant == tenant,
+                FinCashFlow.stat_batch.like(pattern)
+            ).scalar()
+        elif prefix == "YSK":
+            result = db.query(func.max(FinReceivableStat.stat_batch)).filter(
+                FinReceivableStat.tenant == tenant,
+                FinReceivableStat.stat_batch.like(pattern)
+            ).scalar()
+        elif prefix == "SW":
+            result = db.query(func.max(FinTaxStat.stat_batch)).filter(
+                FinTaxStat.tenant == tenant,
+                FinTaxStat.stat_batch.like(pattern)
+            ).scalar()
+        elif prefix == "YJ":
+            result = db.query(func.max(FinCommissionStat.stat_batch)).filter(
+                FinCommissionStat.tenant == tenant,
+                FinCommissionStat.stat_batch.like(pattern)
             ).scalar()
 
         if result:
