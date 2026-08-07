@@ -170,7 +170,20 @@ class InvoiceService:
     @staticmethod
     def update_invoice_red(db: Session, tenant_id: int, id: int, data: InvoiceRedUpdate) -> Optional[InvoiceRedResponse]:
         """更新红字发票"""
-        entity = FinInvoiceRedDAO.update(db, tenant_id, id, data.model_dump(exclude_unset=True))
+        red_reason_map = {'开票错误': 1, '退房退款': 2, '金额调整': 3, '其他': 4}
+        raw = data.model_dump(exclude_unset=True)
+        update_data = {}
+        # red_reason 是字符串枚举，需映射为 model 的整数枚举，原始文字存 remark
+        if 'red_reason' in raw and raw['red_reason'] is not None:
+            update_data['red_reason'] = red_reason_map.get(raw['red_reason'], 4)
+            update_data['remark'] = raw['red_reason']
+        # 金额字段名与 model 不同：invoice_amount->red_amount, tax_amount->red_tax
+        if 'invoice_amount' in raw and raw['invoice_amount'] is not None:
+            update_data['red_amount'] = raw['invoice_amount']
+        if 'tax_amount' in raw and raw['tax_amount'] is not None:
+            update_data['red_tax'] = raw['tax_amount']
+        # total_amount 在 model 中不存在，忽略
+        entity = FinInvoiceRedDAO.update(db, tenant_id, id, update_data)
         return InvoiceRedResponse.from_orm(entity) if entity else None
 
     @staticmethod
@@ -263,7 +276,15 @@ class InvoiceService:
     @staticmethod
     def update_maintenance_fund(db: Session, tenant_id: int, id: int, data: MaintenanceFundUpdate) -> Optional[MaintenanceFundResponse]:
         """更新维修基金台账"""
-        entity = FinMaintainFundDAO.update(db, tenant_id, id, data.model_dump(exclude_unset=True))
+        pay_status_map = {'未缴纳': 1, '已缴纳': 2, '已上缴': 3}
+        raw = data.model_dump(exclude_unset=True)
+        update_data = {}
+        # pay_status 是字符串枚举，需映射为 model 的整数枚举
+        if 'pay_status' in raw and raw['pay_status'] is not None:
+            update_data['pay_status'] = pay_status_map.get(raw['pay_status'], 1)
+        if 'remark' in raw and raw['remark'] is not None:
+            update_data['remark'] = raw['remark']
+        entity = FinMaintainFundDAO.update(db, tenant_id, id, update_data)
         return MaintenanceFundResponse.from_orm(entity) if entity else None
 
     @staticmethod
@@ -283,14 +304,65 @@ class InvoiceService:
         )
 
     @staticmethod
+    def _parse_declare_period(declare_month: str) -> tuple:
+        """
+        解析申报月份字符串为 (year, month)。
+        支持 '2026-01' / '2026/01' / '202601' / '2026年1月' 等格式；
+        无法解析出年份时用当前年份，无法解析出月份时用当前月份。
+        """
+        now = datetime.now()
+        year, month = now.year, now.month
+        if declare_month:
+            import re
+            nums = re.findall(r'\d+', str(declare_month))
+            if len(nums) >= 2:
+                year, month = int(nums[0]), int(nums[1])
+            elif len(nums) == 1:
+                token = nums[0]
+                if len(token) == 6:  # 202601
+                    year, month = int(token[:4]), int(token[4:])
+                elif len(token) == 4:  # 仅年份
+                    year = int(token)
+                else:  # 仅月份
+                    month = int(token)
+        return year, month
+
+    @staticmethod
+    def _tax_declare_to_model(data_dict: dict) -> dict:
+        """
+        将 TaxDeclare schema 字段映射为 FinTaxDeclare model 字段，
+        丢弃 model 中不存在的字段（如 declare_type/create_user_id 等）。
+        """
+        model_data = {}
+        if data_dict.get('declare_no'):
+            model_data['declare_no'] = data_dict['declare_no']
+        if data_dict.get('project_id') is not None:
+            model_data['project_id'] = data_dict['project_id']
+        if data_dict.get('declare_month'):
+            year, month = InvoiceService._parse_declare_period(data_dict['declare_month'])
+            model_data['declare_year'] = year
+            model_data['declare_month'] = month
+        if data_dict.get('invoice_total') is not None:
+            model_data['total_invoice_amount'] = data_dict['invoice_total']
+        if data_dict.get('tax_total') is not None:
+            model_data['total_tax_amount'] = data_dict['tax_total']
+        if data_dict.get('declare_amount') is not None:
+            model_data['vat_amount'] = data_dict['declare_amount']
+        if data_dict.get('declare_date') is not None:
+            model_data['declare_time'] = data_dict['declare_date']
+        if data_dict.get('remark') is not None:
+            model_data['remark'] = data_dict['remark']
+        return model_data
+
+    @staticmethod
     def create_tax_declare(db: Session, tenant_id: int, data: TaxDeclareCreate, create_user_id: int = 1) -> TaxDeclareResponse:
         """创建税务申报记录"""
         data_dict = data.model_dump()
         if not data_dict.get('declare_no'):
             data_dict['declare_no'] = InvoiceService._generate_doc_no(db, tenant_id, "SB")
-        data_dict['create_user_id'] = create_user_id
-        data_dict['update_user_id'] = create_user_id
-        entity = FinTaxDeclareDAO.create(db, tenant_id, data_dict)
+        model_data = InvoiceService._tax_declare_to_model(data_dict)
+        model_data['declare_user_id'] = create_user_id
+        entity = FinTaxDeclareDAO.create(db, tenant_id, model_data)
         return TaxDeclareResponse.from_orm(entity)
 
     @staticmethod
@@ -302,7 +374,8 @@ class InvoiceService:
     @staticmethod
     def update_tax_declare(db: Session, tenant_id: int, id: int, data: TaxDeclareUpdate) -> Optional[TaxDeclareResponse]:
         """更新税务申报记录"""
-        entity = FinTaxDeclareDAO.update(db, tenant_id, id, data.model_dump(exclude_unset=True))
+        model_data = InvoiceService._tax_declare_to_model(data.model_dump(exclude_unset=True))
+        entity = FinTaxDeclareDAO.update(db, tenant_id, id, model_data)
         return TaxDeclareResponse.from_orm(entity) if entity else None
 
     @staticmethod

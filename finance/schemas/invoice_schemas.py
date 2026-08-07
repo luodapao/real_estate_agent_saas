@@ -237,17 +237,23 @@ class TaxDeclareResponse(ORMBaseModel):
     """税务申报响应模型"""
     model_config = {'from_attributes': True}
     id: int
+    tenant: str
     declare_no: str
     project_id: int
-    project_name: Optional[str] = Field(None, description="楼盘名称")
-    declare_month: str
-    declare_type: str
-    invoice_total: Decimal
-    tax_total: Decimal
-    declare_amount: Decimal
-    declare_date: datetime
-    declare_status: str
-    remark: Optional[str]
+    declare_year: int
+    declare_month: int
+    declare_quarter: Optional[int] = None
+    total_invoice_amount: Decimal
+    total_tax_amount: Decimal
+    vat_amount: Decimal
+    additional_tax_amount: Decimal
+    stamp_tax_amount: Decimal
+    declare_status: int
+    declare_time: Optional[datetime] = None
+    declare_user_id: Optional[int] = None
+    declare_file_url: Optional[str] = None
+    remark: Optional[str] = None
+    version: int = Field(0, description="乐观锁版本号")
     is_del: int
     create_time: datetime
     update_time: datetime
