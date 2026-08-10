@@ -25,10 +25,15 @@ if [ ! -d "$APP_DIR/venv" ]; then
     echo "依赖安装完成"
 fi
 
-# 读取环境变量（精准匹配行首变量，解决多PORT匹配bug）
-APP_HOST=$(grep '^HOST=' .env | cut -d'=' -f2)
-APP_PORT=$(grep '^PORT=' .env | cut -d'=' -f2)
-APP_WORKERS=$(grep '^WORKERS=' .env | cut -d'=' -f2)
+# 读取环境变量（兼容行首空格/CRLF，缺失时用默认值兜底）
+if [ -f "$APP_DIR/.env" ]; then
+    APP_HOST=$(grep -E '^[[:space:]]*HOST=' "$APP_DIR/.env" | tail -n1 | cut -d'=' -f2 | tr -d '\r' | xargs)
+    APP_PORT=$(grep -E '^[[:space:]]*PORT=' "$APP_DIR/.env" | tail -n1 | cut -d'=' -f2 | tr -d '\r' | xargs)
+    APP_WORKERS=$(grep -E '^[[:space:]]*WORKERS=' "$APP_DIR/.env" | tail -n1 | cut -d'=' -f2 | tr -d '\r' | xargs)
+fi
+APP_HOST="${APP_HOST:-0.0.0.0}"
+APP_PORT="${APP_PORT:-8000}"
+APP_WORKERS="${APP_WORKERS:-4}"
 
 # 启动服务
 echo "正在启动 $APP_NAME..."
