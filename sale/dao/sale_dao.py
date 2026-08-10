@@ -1010,6 +1010,8 @@ class SaleSubscribeDAO:
         if filters:
             if filters.get('project_id'):
                 query = query.filter(SaleSubscribe.project_id == filters['project_id'])
+            if filters.get('house_id'):
+                query = query.filter(SaleSubscribe.house_id == filters['house_id'])
             if filters.get('customer_id'):
                 query = query.filter(SaleSubscribe.customer_id == filters['customer_id'])
             if filters.get('subscribe_status'):
@@ -1030,6 +1032,8 @@ class SaleSubscribeDAO:
         if filters:
             if filters.get('project_id'):
                 query = query.filter(SaleSubscribe.project_id == filters['project_id'])
+            if filters.get('house_id'):
+                query = query.filter(SaleSubscribe.house_id == filters['house_id'])
             if filters.get('customer_id'):
                 query = query.filter(SaleSubscribe.customer_id == filters['customer_id'])
             if filters.get('subscribe_status'):
