@@ -2,7 +2,8 @@
 房地产SaaS销售管理系统 - 销售业绩与考核模块数据模型
 """
 
-from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
+from pydantic import BaseModel, Field
+from common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -18,7 +19,6 @@ class TeamCreate(BaseModel):
     leader_id: Optional[int] = Field(None, description="团队负责人ID")
     team_level: Optional[int] = Field(1, description="团队层级")
     team_status: Optional[int] = Field(1, description="团队状态（1：正常 2：冻结 3：解散）")
-    remark: Optional[str] = Field(None, description="备注")
 
 
 class TeamUpdate(BaseModel):
@@ -26,7 +26,6 @@ class TeamUpdate(BaseModel):
     team_name: Optional[str] = Field(None, description="团队名称", max_length=100)
     leader_id: Optional[int] = Field(None, description="团队负责人ID")
     team_status: Optional[int] = Field(None, description="团队状态")
-    remark: Optional[str] = Field(None, description="备注")
 
 
 class TeamResponse(ORMBaseModel):
@@ -42,7 +41,6 @@ class TeamResponse(ORMBaseModel):
     member_count: int
     team_status: int
     status: int
-    remark: Optional[str]
     create_time: Optional[datetime]
     update_time: Optional[datetime]
 
@@ -61,7 +59,6 @@ class TeamDetailResponse(ORMBaseModel):
     status: int
     sub_teams: List[dict]
     performance: dict
-    remark: Optional[str]
     create_time: Optional[datetime]
     update_time: Optional[datetime]
 
@@ -79,7 +76,6 @@ class PerformanceTargetCreate(BaseModel):
     target_amount: Decimal = Field(..., description="目标金额", ge=0)
     target_sets: Optional[int] = Field(None, description="目标套数")
     target_status: Optional[int] = Field(1, description="目标状态（1：进行中 2：已完成 3：已作废）")
-    remark: Optional[str] = Field(None, description="备注")
 
 
 class PerformanceTargetUpdate(BaseModel):
@@ -87,7 +83,6 @@ class PerformanceTargetUpdate(BaseModel):
     target_amount: Optional[Decimal] = Field(None, description="目标金额", ge=0)
     target_sets: Optional[int] = Field(None, description="目标套数")
     target_status: Optional[int] = Field(None, description="目标状态")
-    remark: Optional[str] = Field(None, description="备注")
 
 
 class PerformanceTargetResponse(ORMBaseModel):
@@ -106,7 +101,6 @@ class PerformanceTargetResponse(ORMBaseModel):
     target_sets: Optional[int]
     target_status: int
     status: int
-    remark: Optional[str]
     create_time: Optional[datetime]
     update_time: Optional[datetime]
 
