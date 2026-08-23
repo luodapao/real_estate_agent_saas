@@ -15,6 +15,7 @@ class LoginRequest(BaseModel):
     """登录请求模型"""
     account: str = Field(..., description="登录账号", max_length=50)
     password: str = Field(..., description="密码", max_length=100)
+    ticket: Optional[str] = Field(None, description="预登录票据（MCP扫码登录用）", max_length=100)
 
 
 class LoginResponse(ORMBaseModel):
@@ -24,6 +25,24 @@ class LoginResponse(ORMBaseModel):
     token_type: str = Field(..., description="令牌类型")
     expires_in: int = Field(..., description="过期时间（秒）")
     user: 'UserResponse' = Field(..., description="用户信息")
+
+
+class PrepareLoginReq(BaseModel):
+    """预登录请求模型"""
+    mcpSessionId: str = Field(..., description="MCP会话ID", max_length=100)
+    expireSeconds: Optional[int] = Field(600, description="票据过期时间（秒），默认600s")
+
+
+class PrepareLoginResp(BaseModel):
+    """预登录响应模型"""
+    loginUrl: str = Field(..., description="登录URL")
+    ticket: str = Field(..., description="一次性登录票据")
+
+
+class WaitLoginReq(BaseModel):
+    """长轮询等待登录请求模型"""
+    ticket: str = Field(..., description="预登录票据", max_length=100)
+    timeout: Optional[int] = Field(30, description="轮询超时时间（秒），默认30s")
 
 
 # ========== 用户管理模型 ==========

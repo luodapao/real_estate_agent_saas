@@ -178,6 +178,16 @@ class RedisClient:
             logger.error("释放锁失败 key=%s: %s，依赖TTL自动过期兜底", key, e)
             return False
 
+    def publish(self, channel: str, message):
+        """发布消息到指定频道"""
+        if not self._ensure_connection():
+            return None
+        try:
+            return self._client.publish(channel, message)
+        except Exception as e:
+            logger.error("Redis publish失败 channel=%s: %s", channel, e)
+            return None
+
 
 # 创建全局Redis客户端实例
 redis_client = RedisClient()

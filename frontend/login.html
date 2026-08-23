@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent SaaS 管理平台 - 登录</title>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+  <!-- Element Plus -->
+  <link rel="stylesheet" href="https://unpkg.com/element-plus@2.8.0/dist/index.css" />
+  <script src="https://unpkg.com/element-plus@2.8.0/dist/index.full.min.js"></script>
+  <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #app { height: 100%; width: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      overflow: hidden;
+    }
+    .bg-decor {
+      position: absolute; inset: 0; overflow: hidden; z-index: 0; pointer-events: none;
+    }
+    .bg-decor .circle {
+      position: absolute; border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .bg-decor .c1 { width: 500px; height: 500px; top: -150px; left: -150px; }
+    .bg-decor .c2 { width: 400px; height: 400px; bottom: -120px; right: -120px; }
+    .bg-decor .c3 { width: 260px; height: 260px; top: 30%; right: 15%; opacity: .6; }
+
+    .login-wrap {
+      position: relative; z-index: 1;
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      width: 100%; max-width: 440px;
+      background: #ffffffee;
+      backdrop-filter: blur(14px);
+      border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+      padding: 40px 36px 32px;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 8px;
+    }
+    .brand-logo {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: #fff; font-weight: 700; font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 8px 18px rgba(102, 126, 234, 0.45);
+    }
+    .brand-title { font-size: 20px; font-weight: 600; color: #1f2937; }
+    .brand-sub { font-size: 13px; color: #6b7280; margin-top: 2px; }
+
+    .ticket-banner {
+      margin-top: 20px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+      color: #4338ca;
+      font-size: 13px;
+      display: flex; align-items: center; gap: 8px;
+      word-break: break-all;
+    }
+    .ticket-banner.warn {
+      background: #fff7ed; border-color: #fed7aa; color: #c2410c;
+    }
+
+    .form-wrap { margin-top: 24px; }
+    .form-item-label {
+      font-size: 13px; color: #374151; font-weight: 500; margin-bottom: 6px;
+    }
+
+    .login-tip {
+      margin-top: 18px; padding: 12px 14px;
+      font-size: 12px; color: #6b7280; line-height: 1.7;
+      background: #f9fafb; border-radius: 10px; border: 1px solid #f3f4f6;
+    }
+    .login-tip b { color: #111827; }
+
+    .footer {
+      margin-top: 26px; text-align: center; font-size: 12px; color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="bg-decor">
+      <div class="circle c1"></div>
+      <div class="circle c2"></div>
+      <div class="circle c3"></div>
+    </div>
+
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="brand">
+          <div class="brand-logo">A</div>
+          <div>
+            <div class="brand-title">房地产 Agent SaaS 管理平台</div>
+            <div class="brand-sub">ArkClaw 智能 Agent 统一身份登录</div>
+          </div>
+        </div>
+
+        <!-- 票据提示 -->
+        <div v-if="ticket" class="ticket-banner" :class="{warn: !ticketValid}">
+          <el-icon><Link /></el-icon>
+          <span v-if="ticketValid">
+            已检测到登录票据，登录成功后将自动通知 AI 窗口。
+            Ticket：<code style="background:#e0e7ff;padding:1px 6px;border-radius:4px;">{{ shortTicket }}</code>
+          </span>
+          <span v-else>
+            当前链接未携带有效票据（或已过期），登录成功后不会同步到 AI 窗口。
+          </span>
+        </div>
+        <div v-else class="ticket-banner warn">
+          <el-icon><WarningFilled /></el-icon>
+          <span>未携带登录票据，请从 AI 窗口重新打开登录链接。</span>
+        </div>
+
+        <!-- 登录表单 -->
+        <el-form
+          ref="formRef"
+          class="form-wrap"
+          :model="form"
+          :rules="rules"
+          label-position="top"
+          @submit.prevent
+        >
+          <el-form-item label="登录账号" prop="account">
+            <el-input
+              v-model="form.account"
+              size="large"
+              placeholder="请输入账号"
+              :prefix-icon="User"
+              clearable
+            />
+          </el-form-item>
+
+          <el-form-item label="登录密码" prop="password">
+            <el-input
+              v-model="form.password"
+              type="password"
+              size="large"
+              placeholder="请输入密码"
+              :prefix-icon="Lock"
+              show-password
+              @keyup.enter="onLogin"
+            />
+          </el-form-item>
+
+          <el-button
+            type="primary"
+            size="large"
+            style="width:100%; margin-top: 6px;"
+            :loading="loading"
+            @click="onLogin"
+          >
+            {{ loading ? '登录中...' : '立即登录' }}
+          </el-button>
+        </el-form>
+
+        <!-- 登录结果展示（Demo 用） -->
+        <div v-if="showResult" class="login-tip">
+          <div v-if="loginOk" style="color:#047857;">
+            <b>✅ 登录成功！</b><br />
+            <b>Token (前40位)：</b>{{ tokenPreview }}<br />
+            <b>姓名：</b>{{ userInfo.name }} &nbsp;
+            <b>租户：</b>{{ userInfo.tenant_id }}
+            <div v-if="ticket && ticketValid" style="margin-top:8px;color:#4338ca;">
+              🎫 票据已标记为 success，AI 窗口应在 1~2 秒内收到登录结果。
+            </div>
+          </div>
+          <div v-else style="color:#b91c1c;">
+            <b>❌ 登录失败：</b>{{ errorMsg }}
+          </div>
+        </div>
+
+        <div class="footer">
+          © {{ year }} 房地产 Agent 自主调用 SaaS 平台 · 内部测试版
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted, markRaw } = Vue;
+    const { ElMessage } = ElementPlus;
+    const { User, Lock, Link, WarningFilled } = ElementPlusIconsVue;
+
+    const app = createApp({
+      setup() {
+        const formRef = ref(null);
+        const loading = ref(false);
+        const showResult = ref(false);
+        const loginOk = ref(false);
+        const errorMsg = ref('');
+        const tokenPreview = ref('');
+        const userInfo = reactive({ name: '', tenant_id: '' });
+        const year = new Date().getFullYear();
+
+        // 读取 URL query 中的 ticket
+        const ticket = ref('');
+        onMounted(() => {
+          const usp = new URLSearchParams(window.location.search);
+          ticket.value = (usp.get('ticket') || '').trim();
+        });
+        const ticketValid = computed(() =>
+          ticket.value && ticket.value.length > 10
+        );
+        const shortTicket = computed(() => {
+          if (!ticket.value) return '';
+          const t = ticket.value;
+          return t.length > 16 ? t.slice(0, 8) + '...' + t.slice(-6) : t;
+        });
+
+        const form = reactive({
+          account: '',
+          password: ''
+        });
+
+        const rules = {
+          account: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
+          password: [
+            { required: true, message: '请输入登录密码', trigger: 'blur' },
+            { min: 6, message: '密码长度至少 6 位', trigger: 'blur' }
+          ]
+        };
+
+        async function onLogin() {
+          if (!formRef.value) return;
+          try {
+            await formRef.value.validate();
+          } catch (e) {
+            return;
+          }
+          loading.value = true;
+          showResult.value = false;
+          try {
+            const payload = {
+              account: form.account,
+              password: form.password
+            };
+            // 携带 ticket（若有）
+            if (ticketValid.value) {
+              payload.ticket = ticket.value;
+            }
+            const resp = await fetch('/api/admin/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+            const json = await resp.json();
+            if (json && (json.code === 0 || json.code === 200) && json.data) {
+              loginOk.value = true;
+              const data = json.data;
+              const token = data.access_token || data.token || '';
+              tokenPreview.value = token ? token.slice(0, 40) + '...' : '无';
+              userInfo.name = (data.user && (data.user.name || data.user.account)) || '未知';
+              userInfo.tenant_id = (data.user && data.user.tenant_id) ?? '-';
+              showResult.value = true;
+              ElMessage.success('登录成功，已同步票据状态到 AI 窗口');
+            } else {
+              loginOk.value = false;
+              errorMsg.value = (json && json.message) || `登录失败 (code=${json ? json.code : 'none'})`;
+              showResult.value = true;
+              ElMessage.error(errorMsg.value);
+            }
+          } catch (err) {
+            loginOk.value = false;
+            errorMsg.value = '网络错误：' + (err && err.message ? err.message : String(err));
+            showResult.value = true;
+            ElMessage.error(errorMsg.value);
+          } finally {
+            loading.value = false;
+          }
+        }
+
+        return {
+          formRef, form, rules,
+          loading, showResult, loginOk, errorMsg, tokenPreview, userInfo,
+          ticket, ticketValid, shortTicket,
+          User: markRaw(User),
+          Lock: markRaw(Lock),
+          Link: markRaw(Link),
+          WarningFilled: markRaw(WarningFilled),
+          onLogin, year
+        };
+      }
+    });
+
+    app.use(ElementPlus);
+    for (const [k, v] of Object.entries(ElementPlusIconsVue)) {
+      app.component(k, v);
+    }
+    app.mount('#app');
+  </script>
+</body>
+</html>

@@ -3,11 +3,13 @@
 负责挂载四大子系统路由、初始化中间件、配置全局异常处理
 """
 
+import os
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
-from starlette.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import JSONResponse, FileResponse
 
 # 全局配置和核心组件
 from config.settings import settings
@@ -86,6 +88,19 @@ def create_app() -> FastAPI:
 
     # ========== 注册Finance子系统路由（全部放开，统一前缀 /api/finance）==========
     app.include_router(finance_router, prefix="/api", tags=["Finance - 财务管理"])
+
+    # ========== 挂载前端静态页面（登录Demo等）==========
+    frontend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "frontend")
+    if os.path.isdir(frontend_dir):
+        app.mount("/frontend", StaticFiles(directory=frontend_dir, html=True), name="frontend")
+
+    # ========== 登录页快捷入口：/login 直接跳转 login.html ==========
+    @app.get("/login", include_in_schema=False)
+    async def login_page(ticket: str = None):
+        login_html = os.path.join(frontend_dir, "login.html")
+        if os.path.isfile(login_html):
+            return FileResponse(login_html)
+        return JSONResponse(status_code=404, content={"code": 404, "message": "登录页未找到"})
 
     return app
 
