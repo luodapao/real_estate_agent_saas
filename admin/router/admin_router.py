@@ -97,16 +97,8 @@ async def login(request: Request, login_data: LoginRequest, db: Session = Depend
 
         return success_response(data=result)
     except Exception as e:
-        # 登录失败时，如果携带了 ticket，也要更新票据状态为 failed
-        ticket = login_data.ticket
-        if ticket:
-            raw = redis_client.get(f"login:ticket:{ticket}")
-            if raw:
-                ticket_data = json.loads(raw)
-                ticket_data["status"] = "failed"
-                ticket_data["token"] = None
-                redis_client.setex(f"login:ticket:{ticket}", 300, json.dumps(ticket_data))
-                redis_client.publish(f"login_notify:{ticket}", json.dumps(ticket_data))
+        # 登录失败：不更新 Redis ticket 状态，保持 pending，允许用户在浏览器重试
+        # （只有登录成功才写 success + publish，否则 MCP 侧会立即拿到 failed 终态，无法再重试）
 
         # 记录登录失败日志
         ip = request.client.host if request.client else "unknown"
@@ -122,13 +114,14 @@ async def wait_login(req: WaitLoginReq):
     timeout = req.timeout or 30
     timeout = min(max(timeout, 5), 60)
 
-    # 先快速检查一次
+    # 先快速检查一次，避免已登录的情况下还要等
     raw = redis_client.get(f"login:ticket:{ticket}")
     if raw:
         ticket_data = json.loads(raw)
-        if ticket_data["status"] != "pending":
-            if ticket_data["status"] == "success":
-                redis_client.delete(f"login:ticket:{ticket}")
+        # 只有 status == success 才视为终态，立即返回并删除一次性票据
+        # 其它状态（pending / 历史残留的 failed）都继续等待，允许用户在登录页重试多次
+        if ticket_data["status"] == "success":
+            redis_client.delete(f"login:ticket:{ticket}")
             return success_response(data=ticket_data)
     else:
         return error_response(4000, "链接已过期，请重新在AI窗口发起登录")
@@ -175,6 +168,8 @@ async def wait_login(req: WaitLoginReq):
     except asyncio.TimeoutError:
         sub_result = None
 
+    # 如果 pubsub 收到结果：只有 status == success 才立即终态返回并消费票据
+    # 否则（历史残留的 failed 等）不返回，继续走降级轮询等待用户重试登录成功
     if sub_result is not None:
         ticket_data = sub_result if isinstance(sub_result, dict) else {}
         if isinstance(sub_result, str):
@@ -184,9 +179,9 @@ async def wait_login(req: WaitLoginReq):
                 ticket_data = {}
         if ticket_data.get("status") == "success":
             redis_client.delete(f"login:ticket:{ticket}")
-        return success_response(data=ticket_data)
+            return success_response(data=ticket_data)
 
-    # 降级：定期检查 Redis Key
+    # Pub/Sub 未收到或未等到成功，降级为定期检查 Redis Key
     start_time = time.time()
     check_interval = 1.0
     while (time.time() - start_time) < timeout:
@@ -194,9 +189,9 @@ async def wait_login(req: WaitLoginReq):
         if not raw:
             return error_response(4000, "链接已过期，请重新在AI窗口发起登录")
         ticket_data = json.loads(raw)
-        if ticket_data["status"] != "pending":
-            if ticket_data["status"] == "success":
-                redis_client.delete(f"login:ticket:{ticket}")
+        # 只把成功当作终态返回；其余（pending/failed）继续等
+        if ticket_data["status"] == "success":
+            redis_client.delete(f"login:ticket:{ticket}")
             return success_response(data=ticket_data)
         await asyncio.sleep(check_interval)
 
