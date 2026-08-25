@@ -102,6 +102,14 @@ def create_app() -> FastAPI:
             return FileResponse(login_html)
         return JSONResponse(status_code=404, content={"code": 404, "message": "登录页未找到"})
 
+    # ========== 超级用户管理页快捷入口：/superuser-control 直接返回管理页 ==========
+    @app.get("/superuser-control", include_in_schema=False)
+    async def superuser_control_page(ticket: str = None):
+        control_html = os.path.join(frontend_dir, "superuser-control.html")
+        if os.path.isfile(control_html):
+            return FileResponse(control_html)
+        return JSONResponse(status_code=404, content={"code": 404, "message": "管理页未找到"})
+
     return app
 
 def init_app(app: FastAPI):

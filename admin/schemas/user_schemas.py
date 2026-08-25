@@ -45,6 +45,24 @@ class WaitLoginReq(BaseModel):
     timeout: Optional[int] = Field(30, description="轮询超时时间（秒），默认30s")
 
 
+class PrepareSuperuserControlReq(BaseModel):
+    """超级用户管理预请求模型（生成一次性管理票据，无长轮询）"""
+    mcpSessionId: str = Field(..., description="MCP会话ID", max_length=100)
+    tenantId: int = Field(..., description="租户ID")
+    expireSeconds: Optional[int] = Field(600, description="票据过期时间（秒），默认600s")
+
+
+class PrepareSuperuserControlResp(BaseModel):
+    """超级用户管理预响应模型"""
+    controlUrl: str = Field(..., description="管理页URL")
+    ticket: str = Field(..., description="一次性管理票据")
+
+
+class VerifySuperuserControlReq(BaseModel):
+    """校验管理票据请求模型"""
+    ticket: str = Field(..., description="管理票据", max_length=100)
+
+
 # ========== 用户管理模型 ==========
 
 class UserCreate(BaseModel):

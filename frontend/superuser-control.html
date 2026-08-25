@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>租户管理员操作页面</title>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+  <!-- Element Plus -->
+  <link rel="stylesheet" href="https://unpkg.com/element-plus@2.8.0/dist/index.css" />
+  <script src="https://unpkg.com/element-plus@2.8.0/dist/index.full.min.js"></script>
+  <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #app { min-height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: #f0f2f5;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      padding: 18px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .page-header .title { font-size: 18px; font-weight: 600; }
+    .page-header .sub { font-size: 12px; opacity: .85; margin-top: 2px; }
+    .page-header .user-box { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .content-wrap { padding: 20px 28px; max-width: 1200px; margin: 0 auto; }
+    .toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .empty-tip { text-align: center; padding: 60px 0; color: #9ca3af; font-size: 14px; }
+    .back-btn { margin-bottom: 16px; }
+    .info-card { background: #fff; border-radius: 10px; padding: 24px 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .info-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { width: 120px; color: #6b7280; font-size: 14px; }
+    .info-value { flex: 1; color: #1f2937; font-size: 14px; font-weight: 500; }
+    .action-bar { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .login-center { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+    .login-card {
+      width: 100%; max-width: 420px; background: #fff; border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.15); padding: 36px 32px;
+    }
+    .login-card h2 { text-align: center; margin-bottom: 6px; color: #1f2937; }
+    .login-card .desc { text-align: center; color: #6b7280; font-size: 13px; margin-bottom: 22px; }
+    .footer { text-align: center; padding: 20px; color: #9ca3af; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- ============ 登录视图（无 token 时） ============ -->
+    <div v-if="currentView === 'login'" class="login-center">
+      <div class="login-card">
+        <h2>{{ tenantName }} 管理员登录</h2>
+        <div class="desc">请使用租户超级管理员账号登录后进行用户管理</div>
+        <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules" label-position="top" @submit.prevent>
+          <el-form-item label="登录账号" prop="account">
+            <el-input v-model="loginForm.account" size="large" placeholder="请输入账号" :prefix-icon="User" clearable />
+          </el-form-item>
+          <el-form-item label="登录密码" prop="password">
+            <el-input v-model="loginForm.password" type="password" size="large" placeholder="请输入密码"
+                      :prefix-icon="Lock" show-password @keyup.enter="onLogin" />
+          </el-form-item>
+          <el-button type="primary" size="large" style="width:100%" :loading="loginLoading" @click="onLogin">登录</el-button>
+        </el-form>
+        <div v-if="ticketInvalid" style="margin-top:14px;color:#c2410c;font-size:12px;text-align:center;">
+          管理链接已过期，请在 AI 窗口重新发起管理。
+        </div>
+      </div>
+    </div>
+
+    <template v-else>
+      <!-- ============ 顶部标题 ============ -->
+      <div class="page-header">
+        <div>
+          <div class="title">{{ tenantName }}管理员操作页面</div>
+          <div class="sub">租户ID：{{ tenantId }} · 当前登录：{{ currentUserInfo.name || '-' }}</div>
+        </div>
+        <div class="user-box">
+          <el-button size="small" plain @click="logout">退出登录</el-button>
+        </div>
+      </div>
+
+      <div class="content-wrap">
+        <!-- ============ 用户列表视图 ============ -->
+        <div v-if="currentView === 'userList'">
+          <div class="toolbar">
+            <el-input v-model="searchUserName" placeholder="根据用户名搜索" clearable style="width:240px"
+                      @keyup.enter="loadUserList(1)" @clear="loadUserList(1)">
+              <template #append>
+                <el-button :icon="Search" @click="loadUserList(1)" />
+              </template>
+            </el-input>
+            <div style="flex:1"></div>
+            <el-button type="primary" :icon="Plus" @click="currentView = 'createUser'">创建用户</el-button>
+            <el-button type="success" :icon="UserFilled" @click="goRoleManage">管理角色</el-button>
+          </div>
+
+          <el-card shadow="never">
+            <el-table :data="userList" v-loading="userLoading" stripe>
+              <el-table-column type="index" label="#" width="60" />
+              <el-table-column prop="name" label="姓名" min-width="100" />
+              <el-table-column prop="mobile" label="手机号" min-width="130">
+                <template #default="{ row }">{{ row.mobile || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="角色" min-width="120">
+                <template #default="{ row }">{{ userTypeText(row.user_type) }}</template>
+              </el-table-column>
+              <el-table-column label="状态" min-width="100">
+                <template #default="{ row }">
+                  <el-tag :type="statusTagType(row.status)" size="small">{{ statusText(row.status) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="详情" width="100" fixed="right">
+                <template #default="{ row }">
+                  <el-button size="small" type="primary" link @click="showUserDetail(row)">详情</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div v-if="!userLoading && userList.length === 0" class="empty-tip">暂无用户</div>
+            <div v-if="userTotal > userListPageSize" style="margin-top:16px;text-align:right;">
+              <el-pagination background layout="prev, pager, next" :total="userTotal"
+                             :page-size="userListPageSize" v-model:current-page="userListPage"
+                             @current-change="loadUserList()" />
+            </div>
+          </el-card>
+        </div>
+
+        <!-- ============ 用户详情视图 ============ -->
+        <div v-if="currentView === 'userDetail'">
+          <el-button class="back-btn" :icon="ArrowLeft" @click="backToList">返回列表</el-button>
+          <div class="info-card">
+            <h3 style="margin-bottom:16px;">用户详情</h3>
+            <div class="info-row"><div class="info-label">姓名</div><div class="info-value">{{ detailUser.name || '-' }}</div></div>
+            <div class="info-row"><div class="info-label">手机号</div><div class="info-value">{{ detailUser.mobile || '-' }}</div></div>
+            <div class="info-row"><div class="info-label">邮箱</div><div class="info-value">{{ detailUser.email || '-' }}</div></div>
+            <div class="info-row"><div class="info-label">账号</div><div class="info-value">{{ detailUser.account || '-' }}</div></div>
+            <div class="info-row"><div class="info-label">角色</div><div class="info-value">{{ userTypeText(detailUser.user_type) }}</div></div>
+            <div class="info-row"><div class="info-label">状态</div>
+              <div class="info-value">
+                <el-tag :type="statusTagType(detailUser.status)" size="small">{{ statusText(detailUser.status) }}</el-tag>
+              </div>
+            </div>
+            <div class="info-row"><div class="info-label">用户ID</div><div class="info-value">{{ detailUser.user_id || '-' }}</div></div>
+            <div class="info-row"><div class="info-label">备注</div><div class="info-value">{{ detailUser.remark || '-' }}</div></div>
+            <div class="info-row"><div class="info-label">创建时间</div><div class="info-value">{{ detailUser.created_at || '-' }}</div></div>
+            <div class="action-bar">
+              <el-button type="primary" :icon="Edit" @click="openEditUser">编辑用户信息</el-button>
+              <el-button type="warning" :icon="RefreshRight" @click="confirmResetPassword(detailUser)">重置密码</el-button>
+              <el-button type="danger" :icon="Delete" @click="confirmDeleteUser(detailUser)">删除用户</el-button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ 创建用户视图 ============ -->
+        <div v-if="currentView === 'createUser'">
+          <el-button class="back-btn" :icon="ArrowLeft" @click="backToList">返回列表</el-button>
+          <div class="info-card">
+            <h3 style="margin-bottom:16px;">创建用户</h3>
+            <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="100px" style="max-width:560px;">
+              <el-form-item label="登录账号" prop="account">
+                <el-input v-model="createForm.account" placeholder="请输入登录账号" />
+              </el-form-item>
+              <el-form-item label="姓名" prop="name">
+                <el-input v-model="createForm.name" placeholder="请输入姓名" />
+              </el-form-item>
+              <el-form-item label="密码" prop="password">
+                <el-input v-model="createForm.password" type="password" placeholder="请输入密码" show-password />
+              </el-form-item>
+              <el-form-item label="手机号" prop="mobile">
+                <el-input v-model="createForm.mobile" placeholder="请输入手机号" />
+              </el-form-item>
+              <el-form-item label="邮箱" prop="email">
+                <el-input v-model="createForm.email" placeholder="请输入邮箱" />
+              </el-form-item>
+              <el-form-item label="用户类型" prop="user_type">
+                <el-select v-model="createForm.user_type" placeholder="请选择" style="width:100%">
+                  <el-option label="内部用户" :value="1" />
+                  <el-option label="分销渠道后台管理员" :value="2" />
+                  <el-option label="外部经纪人" :value="3" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="状态" prop="status">
+                <el-select v-model="createForm.status" placeholder="请选择" style="width:100%">
+                  <el-option label="正常" :value="1" />
+                  <el-option label="禁用" :value="2" />
+                  <el-option label="待审核" :value="4" />
+                </el-select>
+              </el-form-item>
+              <el-form-item label="备注" prop="remark">
+                <el-input v-model="createForm.remark" type="textarea" :rows="3" placeholder="备注（选填）" />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" :loading="createLoading" @click="onCreateUser">创建用户</el-button>
+                <el-button @click="backToList">取消创建</el-button>
+              </el-form-item>
+            </el-form>
+          </div>
+        </div>
+
+        <!-- ============ 管理角色视图 ============ -->
+        <div v-if="currentView === 'roleManage'">
+          <el-button class="back-btn" :icon="ArrowLeft" @click="backToList">返回列表</el-button>
+          <div class="toolbar">
+            <el-button type="primary" :icon="Plus" @click="openRoleDialog(null)">创建角色</el-button>
+            <span style="color:#6b7280;font-size:13px;">角色信息（角色名称、角色编码、状态、备注）</span>
+          </div>
+          <el-card shadow="never">
+            <el-table :data="roleList" v-loading="roleLoading" stripe>
+              <el-table-column type="index" label="#" width="60" />
+              <el-table-column prop="role_name" label="角色名称" min-width="140" />
+              <el-table-column prop="role_code" label="角色编码" min-width="130" />
+              <el-table-column label="类型" min-width="100">
+                <template #default="{ row }">{{ row.role_type === 1 ? '系统角色' : '自定义角色' }}</template>
+              </el-table-column>
+              <el-table-column label="状态" min-width="90">
+                <template #default="{ row }">
+                  <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">{{ row.status === 1 ? '正常' : '禁用' }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="remark" label="描述" min-width="160">
+                <template #default="{ row }">{{ row.remark || '-' }}</template>
+              </el-table-column>
+              <el-table-column label="操作" width="180" fixed="right">
+                <template #default="{ row }">
+                  <el-button size="small" type="primary" link @click="openRoleDialog(row)">更新角色</el-button>
+                  <el-button size="small" type="danger" link @click="confirmDeleteRole(row)">删除角色</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <div v-if="!roleLoading && roleList.length === 0" class="empty-tip">暂无角色</div>
+          </el-card>
+        </div>
+      </div>
+    </template>
+
+    <!-- ============ 编辑用户弹窗 ============ -->
+    <el-dialog v-model="editUserVisible" title="编辑用户信息" width="520px">
+      <el-form ref="editFormRef" :model="editForm" label-width="100px">
+        <el-form-item label="姓名"><el-input v-model="editForm.name" /></el-form-item>
+        <el-form-item label="手机号"><el-input v-model="editForm.mobile" /></el-form-item>
+        <el-form-item label="邮箱"><el-input v-model="editForm.email" /></el-form-item>
+        <el-form-item label="用户类型">
+          <el-select v-model="editForm.user_type" style="width:100%">
+            <el-option label="内部用户" :value="1" />
+            <el-option label="分销渠道后台管理员" :value="2" />
+            <el-option label="外部经纪人" :value="3" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="editForm.status" style="width:100%">
+            <el-option label="正常" :value="1" />
+            <el-option label="禁用" :value="2" />
+            <el-option label="锁定" :value="3" />
+            <el-option label="待审核" :value="4" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注"><el-input v-model="editForm.remark" type="textarea" :rows="2" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editUserVisible = false">取消</el-button>
+        <el-button type="primary" :loading="editLoading" @click="onEditUser">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ============ 创建/更新角色弹窗 ============ -->
+    <el-dialog v-model="roleDialogVisible" :title="roleForm.role_id ? '更新角色' : '创建角色'" width="520px">
+      <el-form ref="roleFormRef" :model="roleForm" :rules="roleRules" label-width="100px">
+        <el-form-item label="角色名称" prop="role_name"><el-input v-model="roleForm.role_name" /></el-form-item>
+        <el-form-item label="角色编码" prop="role_code"><el-input v-model="roleForm.role_code" :disabled="!!roleForm.role_id" /></el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="roleForm.status" style="width:100%">
+            <el-option label="正常" :value="1" />
+            <el-option label="禁用" :value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="描述"><el-input v-model="roleForm.remark" type="textarea" :rows="2" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="roleDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="roleSaveLoading" @click="onSaveRole">保存</el-button>
+      </template>
+    </el-dialog>
+
+    <div class="footer">© {{ year }} 房地产 Agent SaaS 管理平台 · 租户用户管理</div>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, computed, onMounted, markRaw } = Vue;
+    const { ElMessage, ElMessageBox } = ElementPlus;
+    const { User, Lock, Search, Plus, Edit, Delete, RefreshRight, ArrowLeft, UserFilled } = ElementPlusIconsVue;
+
+    const app = createApp({
+      setup() {
+        // ===== 票据与租户 =====
+        const ticket = ref('');
+        const tenantId = ref(null);
+        const tenantName = ref('');
+        const ticketInvalid = ref(false);
+
+        // ===== 登录态 =====
+        const token = ref(localStorage.getItem('superuser_token') || '');
+        const currentUserInfo = reactive({ name: '', user_id: '' });
+        const currentView = ref('login');
+
+        // ===== 用户列表 =====
+        const searchUserName = ref('');
+        const userList = ref([]);
+        const userTotal = ref(0);
+        const userListPage = ref(1);
+        const userListPageSize = 10;
+        const userLoading = ref(false);
+
+        // ===== 用户详情 =====
+        const detailUser = reactive({});
+
+        // ===== 创建用户 =====
+        const createFormRef = ref(null);
+        const createForm = reactive({ account:'', name:'', password:'', mobile:'', email:'', user_type:1, status:1, remark:'' });
+        const createLoading = ref(false);
+
+        // ===== 编辑用户 =====
+        const editUserVisible = ref(false);
+        const editFormRef = ref(null);
+        const editForm = reactive({ name:'', mobile:'', email:'', user_type:1, status:1, remark:'' });
+        const editLoading = ref(false);
+        const editingUserId = ref(null);
+
+        // ===== 角色 =====
+        const roleList = ref([]);
+        const roleLoading = ref(false);
+        const roleDialogVisible = ref(false);
+        const roleFormRef = ref(null);
+        const roleForm = reactive({ role_id:null, role_name:'', role_code:'', role_type:2, status:1, remark:'' });
+        const roleSaveLoading = ref(false);
+
+        // ===== 登录表单 =====
+        const loginFormRef = ref(null);
+        const loginForm = reactive({ account:'', password:'' });
+        const loginLoading = ref(false);
+
+        const year = new Date().getFullYear();
+
+        // ===== 工具方法 =====
+        const userTypeText = (t) => ({1:'内部用户',2:'分销渠道后台管理员',3:'外部经纪人'}[t] || '-');
+        const statusText = (s) => ({1:'正常',2:'禁用',3:'锁定',4:'待审核'}[s] || '-');
+        const statusTagType = (s) => ({1:'success',2:'danger',3:'warning',4:'info'}[s] || 'info');
+
+        function authHeaders() {
+          return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token.value };
+        }
+        async function request(url, options = {}) {
+          const resp = await fetch(url, { ...options, headers: { ...authHeaders(), ...(options.headers||{}) } });
+          const json = await resp.json();
+          return json;
+        }
+
+        // ===== 票据校验 =====
+        async function verifyTicket() {
+          if (!ticket.value) { ticketInvalid.value = true; return; }
+          try {
+            const json = await fetch('/api/admin/tenant/verify-superuser-control', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ticket: ticket.value })
+            }).then(r => r.json());
+            if (json && json.code === 0 && json.data) {
+              tenantId.value = json.data.tenantId;
+              tenantName.value = json.data.tenantName || ('租户' + json.data.tenantId);
+            } else {
+              ticketInvalid.value = true;
+              tenantName.value = '未知租户';
+            }
+          } catch (e) {
+            ticketInvalid.value = true;
+          }
+        }
+
+        // ===== 登录 =====
+        const loginRules = {
+          account: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
+          password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+        };
+        async function onLogin() {
+          if (!loginFormRef.value) return;
+          try { await loginFormRef.value.validate(); } catch (e) { return; }
+          loginLoading.value = true;
+          try {
+            const payload = { account: loginForm.account, password: loginForm.password };
+            if (ticket.value) payload.ticket = ticket.value;
+            const json = await fetch('/api/admin/login', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }).then(r => r.json());
+            if (json && (json.code === 0 || json.code === 200) && json.data) {
+              token.value = json.data.access_token;
+              localStorage.setItem('superuser_token', token.value);
+              currentUserInfo.name = (json.data.user && json.data.user.name) || '';
+              currentUserInfo.user_id = (json.data.user && json.data.user.user_id) || '';
+              currentView.value = 'userList';
+              ElMessage.success('登录成功');
+              loadUserList(1);
+            } else {
+              ElMessage.error((json && json.message) || '登录失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误：' + (e.message || e));
+          } finally {
+            loginLoading.value = false;
+          }
+        }
+
+        function logout() {
+          localStorage.removeItem('superuser_token');
+          token.value = '';
+          currentView.value = 'login';
+          userList.value = [];
+        }
+
+        // ===== 用户列表 =====
+        async function loadUserList(page) {
+          if (page) userListPage.value = page;
+          userLoading.value = true;
+          try {
+            const params = new URLSearchParams({ page: userListPage.value, size: userListPageSize });
+            if (searchUserName.value) params.append('user_name', searchUserName.value);
+            const json = await request('/api/admin/tenant/users?' + params.toString());
+            if (json && json.code === 0 && json.data) {
+              userList.value = json.data.data || [];
+              userTotal.value = json.data.total || 0;
+            } else {
+              ElMessage.error((json && json.message) || '查询失败');
+              userList.value = [];
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          } finally {
+            userLoading.value = false;
+          }
+        }
+
+        // ===== 用户详情 =====
+        async function showUserDetail(row) {
+          currentView.value = 'userDetail';
+          Object.keys(detailUser).forEach(k => delete detailUser[k]);
+          try {
+            const json = await request('/api/admin/tenant/users/' + row.user_id);
+            if (json && json.code === 0 && json.data) {
+              Object.assign(detailUser, json.data);
+            } else {
+              ElMessage.error((json && json.message) || '查询详情失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          }
+        }
+
+        function backToList() {
+          currentView.value = 'userList';
+          loadUserList();
+        }
+
+        // ===== 创建用户 =====
+        const createRules = {
+          account: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
+          name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+          password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+        };
+        async function onCreateUser() {
+          if (!createFormRef.value) return;
+          try { await createFormRef.value.validate(); } catch (e) { return; }
+          createLoading.value = true;
+          try {
+            const json = await request('/api/admin/tenant/users', {
+              method: 'POST', body: JSON.stringify(createForm)
+            });
+            if (json && json.code === 0) {
+              ElMessage.success('创建成功');
+              Object.assign(createForm, { account:'', name:'', password:'', mobile:'', email:'', user_type:1, status:1, remark:'' });
+              currentView.value = 'userList';
+              loadUserList(1);
+            } else {
+              ElMessage.error((json && json.message) || '创建失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          } finally {
+            createLoading.value = false;
+          }
+        }
+
+        // ===== 编辑用户 =====
+        function openEditUser() {
+          Object.assign(editForm, {
+            name: detailUser.name || '', mobile: detailUser.mobile || '', email: detailUser.email || '',
+            user_type: detailUser.user_type || 1, status: detailUser.status || 1, remark: detailUser.remark || ''
+          });
+          editingUserId.value = detailUser.user_id;
+          editUserVisible.value = true;
+        }
+        async function onEditUser() {
+          editLoading.value = true;
+          try {
+            const json = await request('/api/admin/tenant/users/' + editingUserId.value, {
+              method: 'PUT', body: JSON.stringify(editForm)
+            });
+            if (json && json.code === 0) {
+              ElMessage.success('更新成功');
+              editUserVisible.value = false;
+              showUserDetail({ user_id: editingUserId.value });
+            } else {
+              ElMessage.error((json && json.message) || '更新失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          } finally {
+            editLoading.value = false;
+          }
+        }
+
+        // ===== 删除用户 =====
+        async function confirmDeleteUser(row) {
+          try {
+            await ElMessageBox.confirm('确认删除该用户吗？删除后不可恢复。', '删除用户', { type: 'warning' });
+          } catch (e) { return; }
+          try {
+            const json = await request('/api/admin/tenant/users/' + row.user_id, { method: 'DELETE' });
+            if (json && json.code === 0) {
+              ElMessage.success('删除成功');
+              backToList();
+            } else {
+              ElMessage.error((json && json.message) || '删除失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          }
+        }
+
+        // ===== 重置密码 =====
+        async function confirmResetPassword(row) {
+          let pwd;
+          try {
+            const res = await ElMessageBox.prompt('请输入新密码', '重置密码', {
+              inputPattern: /.{6,}/, inputErrorMessage: '密码至少6位', type: 'warning'
+            });
+            pwd = res.value;
+          } catch (e) { return; }
+          try {
+            const json = await request('/api/admin/tenant/users/' + row.user_id + '/reset-password', {
+              method: 'PUT', body: JSON.stringify({ new_password: pwd })
+            });
+            if (json && json.code === 0) {
+              ElMessage.success('密码重置成功');
+            } else {
+              ElMessage.error((json && json.message) || '重置失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          }
+        }
+
+        // ===== 角色管理 =====
+        async function goRoleManage() {
+          currentView.value = 'roleManage';
+          loadRoleList();
+        }
+        async function loadRoleList() {
+          roleLoading.value = true;
+          try {
+            const json = await request('/api/admin/role/?page=1&size=50');
+            if (json && json.code === 0 && json.data) {
+              roleList.value = json.data.data || [];
+            } else {
+              roleList.value = [];
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          } finally {
+            roleLoading.value = false;
+          }
+        }
+        function openRoleDialog(row) {
+          if (row) {
+            Object.assign(roleForm, { role_id: row.role_id, role_name: row.role_name, role_code: row.role_code, role_type: row.role_type, status: row.status, remark: row.remark || '' });
+          } else {
+            Object.assign(roleForm, { role_id:null, role_name:'', role_code:'', role_type:2, status:1, remark:'' });
+          }
+          roleDialogVisible.value = true;
+        }
+        const roleRules = {
+          role_name: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
+          role_code: [{ required: true, message: '请输入角色编码', trigger: 'blur' }]
+        };
+        async function onSaveRole() {
+          if (!roleFormRef.value) return;
+          try { await roleFormRef.value.validate(); } catch (e) { return; }
+          roleSaveLoading.value = true;
+          try {
+            let json;
+            if (roleForm.role_id) {
+              json = await request('/api/admin/role/' + roleForm.role_id, {
+                method: 'PUT', body: JSON.stringify({ role_name: roleForm.role_name, role_code: roleForm.role_code, status: roleForm.status, remark: roleForm.remark })
+              });
+            } else {
+              json = await request('/api/admin/role/', {
+                method: 'POST', body: JSON.stringify(roleForm)
+              });
+            }
+            if (json && json.code === 0) {
+              ElMessage.success(roleForm.role_id ? '更新成功' : '创建成功');
+              roleDialogVisible.value = false;
+              loadRoleList();
+            } else {
+              ElMessage.error((json && json.message) || '保存失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          } finally {
+            roleSaveLoading.value = false;
+          }
+        }
+        async function confirmDeleteRole(row) {
+          try {
+            await ElMessageBox.confirm('确认删除该角色吗？', '删除角色', { type: 'warning' });
+          } catch (e) { return; }
+          try {
+            const json = await request('/api/admin/role/' + row.role_id, { method: 'DELETE' });
+            if (json && json.code === 0) {
+              ElMessage.success('删除成功');
+              loadRoleList();
+            } else {
+              ElMessage.error((json && json.message) || '删除失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          }
+        }
+
+        // ===== 初始化 =====
+        onMounted(async () => {
+          const usp = new URLSearchParams(window.location.search);
+          ticket.value = (usp.get('ticket') || '').trim();
+          await verifyTicket();
+          if (token.value && !ticketInvalid.value) {
+            // 已有 token，直接进入列表（后端会校验 token 有效性）
+            try {
+              const profile = await request('/api/admin/tenant/users?page=1&size=1');
+              if (profile && profile.code === 0) {
+                currentView.value = 'userList';
+                loadUserList(1);
+              } else {
+                localStorage.removeItem('superuser_token');
+                token.value = '';
+                currentView.value = 'login';
+              }
+            } catch (e) {
+              currentView.value = 'login';
+            }
+          }
+        });
+
+        return {
+          ticket, tenantId, tenantName, ticketInvalid,
+          token, currentUserInfo, currentView,
+          searchUserName, userList, userTotal, userListPage, userListPageSize, userLoading, loadUserList,
+          detailUser, showUserDetail, backToList,
+          createFormRef, createForm, createRules, createLoading, onCreateUser,
+          editUserVisible, editFormRef, editForm, editLoading, openEditUser, onEditUser,
+          confirmDeleteUser, confirmResetPassword,
+          roleList, roleLoading, goRoleManage,
+          roleDialogVisible, roleFormRef, roleForm, roleRules, roleSaveLoading, openRoleDialog, onSaveRole, confirmDeleteRole,
+          loginFormRef, loginForm, loginRules, loginLoading, onLogin, logout,
+          userTypeText, statusText, statusTagType,
+          User: markRaw(User), Lock: markRaw(Lock), Search: markRaw(Search), Plus: markRaw(Plus),
+          Edit: markRaw(Edit), Delete: markRaw(Delete), RefreshRight: markRaw(RefreshRight),
+          ArrowLeft: markRaw(ArrowLeft), UserFilled: markRaw(UserFilled),
+          year
+        };
+      }
+    });
+
+    app.use(ElementPlus);
+    for (const [k, v] of Object.entries(ElementPlusIconsVue)) {
+      app.component(k, v);
+    }
+    app.mount('#app');
+  </script>
+</body>
+</html>

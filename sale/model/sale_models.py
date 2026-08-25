@@ -82,6 +82,13 @@ class SaleUnit(Base):
     building_id = Column(BigInteger, ForeignKey('sale_building.building_id'), nullable=False, comment='楼栋ID')
     unit_code = Column(String(50), nullable=False, comment='单元编号')
     unit_name = Column(String(100), comment='单元名称')
+    total_floors = Column(Integer, comment='地上总层数（按单元维度真实层数，用于参数化生成房源）')
+    underground_floors = Column(Integer, default=0, comment='地下层数（负层：储藏室/车位），默认0无地下层')
+    start_floor = Column(Integer, default=1, comment='地上起始楼层，默认1')
+    houses_per_floor = Column(Integer, comment='每层户数')
+    room_number_sequence = Column(String(200), comment='每层户号序列，逗号分隔，如 01,02,03,04')
+    house_number_format = Column(String(100), default='{unit_code}-{floor}{room}',
+                                 comment='房号拼接规则模板：占位符 {building_code} {unit_code} {floor} {room}')
     total_houses = Column(Integer, default=0, comment='总房源数')
     status = Column(SmallInteger, default=1, comment='状态：1-正常 2-停用')
     is_del = Column(SmallInteger, default=0, comment='逻辑删除：0-正常 1-删除')
@@ -111,7 +118,9 @@ class SaleHouse(Base):
     unit_id = Column(BigInteger, ForeignKey('sale_unit.unit_id'), nullable=False, comment='单元ID')
     house_code = Column(String(50), nullable=False, comment='房源编号')
     house_name = Column(String(100), comment='房源名称')
-    floor = Column(Integer, comment='所在楼层')
+    floor = Column(Integer, comment='所在楼层（正数为地上，负数为地下，如 -1 表示地下1层）')
+    room_no = Column(String(20), comment='户号（如 01,02）')
+    house_type = Column(SmallInteger, default=1, comment='房源类型：1-住宅 2-储藏室（地下） 3-车位（地下）')
     room_type = Column(String(50), comment='户型（如：3室2厅1卫）')
     building_area = Column(Decimal(10, 2), comment='建筑面积（㎡）')
     usage_area = Column(Decimal(10, 2), comment='套内面积（㎡）')
@@ -136,6 +145,8 @@ class SaleHouse(Base):
         Index('idx_tenant_unit', 'tenant', 'unit_id'),
         Index('idx_tenant_status', 'tenant', 'house_status'),
         Index('idx_tenant_code', 'tenant', 'house_code'),
+        # 唯一约束：同租户+同楼盘+同楼栋+同单元+同房号 不得重复
+        Index('uk_tenant_house_code', 'tenant', 'project_id', 'building_id', 'unit_id', 'house_code', unique=True),
         {'comment': '房源表'}
     )
 

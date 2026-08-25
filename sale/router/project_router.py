@@ -238,7 +238,52 @@ async def update_unit(
         return error_response(-1, str(e))
 
 
-# ========== 房源管理接口 ==========
+# ========== 房源管理接口（参数化自动生成 + 手动单条） ==========
+
+@router.post("/house/generate-preview")
+async def generate_houses_preview(
+    params: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    参数化房源生成（预览）—— 不落库。
+    前端先调用此接口展示待生成的房号，用户确认无误后再调用 /house/batch-create。
+    params:
+      building_id: 楼栋ID（必填）
+      units: 各单元配置（可不同单元不同层数），示例：
+        [{"unit_code": "1", "total_floors": 33, "start_floor": 1, "houses_per_floor": 4,
+          "room_number_sequence": "01,02,03,04", "underground_floors": 2,
+          "underground_houses_per_floor": 10, "underground_room_sequence": "01..10",
+          "underground_house_type": 2, "house_number_format": "{unit_code}-{floor}{room}"},
+         {"unit_code": "2", "total_floors": 28, ..., "house_number_format": "..."}]
+    """
+    try:
+        service = HouseService(db, current_user['tenant'])
+        result = service.generate_houses_preview(params)
+        return success_response(data=result)
+    except Exception as e:
+        return error_response(-1, str(e))
+
+
+@router.post("/house/batch-create")
+async def batch_create_houses(
+    params: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    批量确认房源落库。
+    params 结构与 /house/generate-preview 完全一致即可，
+    后端内部会重新生成并检测冲突，bulk_insert 批量入库。
+    """
+    try:
+        service = HouseService(db, current_user['tenant'])
+        result = service.batch_create_houses(params, current_user['user_id'])
+        return success_response(data=result, message=f"房源批量创建成功（{result.get('inserted_count',0)}套）")
+    except Exception as e:
+        return error_response(-1, str(e))
+
 
 @router.post("/house/create")
 async def create_house(
@@ -246,7 +291,7 @@ async def create_house(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
-    """创建房源"""
+    """创建房源（单条手动，保留用于补齐/异常房源）"""
     try:
         service = HouseService(db, current_user['tenant'])
         house = service.create_house(house_data, current_user['user_id'])

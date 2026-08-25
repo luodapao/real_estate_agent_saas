@@ -229,12 +229,37 @@ class SaleHouseDAO:
     
     @staticmethod
     def create_house(db: Session, house_data: dict) -> SaleHouse:
-        """创建房源"""
+        """创建房源（单条）"""
         house = SaleHouse(**house_data)
         db.add(house)
         db.commit()
         db.refresh(house)
         return house
+    
+    @staticmethod
+    def bulk_create_houses(db: Session, house_list: List[dict]) -> int:
+        """批量创建房源（bulk_insert，一栋楼几千户快速落库）"""
+        if not house_list:
+            return 0
+        # SQLAlchemy bulk_insert_mappings：不走ORM生命周期，性能高
+        db.bulk_insert_mappings(SaleHouse, house_list)
+        db.commit()
+        return len(house_list)
+    
+    @staticmethod
+    def exists_house_by_code(db: Session, tenant: str, project_id: int,
+                             building_id: int, unit_id: int, house_code: str) -> bool:
+        """校验某单元下是否已存在该房号（用于预览后确认前冲突检测）"""
+        return db.query(SaleHouse).filter(
+            and_(
+                SaleHouse.tenant == tenant,
+                SaleHouse.project_id == project_id,
+                SaleHouse.building_id == building_id,
+                SaleHouse.unit_id == unit_id,
+                SaleHouse.house_code == house_code,
+                SaleHouse.is_del == 0
+            )
+        ).first() is not None
     
     @staticmethod
     def get_house_by_id(db: Session, house_id: int, tenant: str) -> Optional[SaleHouse]:

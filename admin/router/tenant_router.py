@@ -3,17 +3,24 @@
 业务逻辑：
 1. 租户超级管理员（tenant_id>0, user_type=1）：管理本租户下的用户
 2. 不开放自主注册，由租户超级管理员创建账号
+3. 预管理接口（公开）：生成一次性管理票据 superuserControlTicket，无长轮询
 """
+import uuid
+import json
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 from typing import Optional
 from core.db_base import get_db
+from core.redis_base import redis_client
 from admin.service.user_service import UserService
 from admin.service.log_service import LogService
+from admin.service.tenant_service import TenantService
 from admin.schemas.user_schemas import (
     UserCreate, UserUpdate, UserResponse,
     UserDetailResponse, UserListResponse, ResetPasswordRequest,
-    GrantRoleRequest
+    GrantRoleRequest,
+    PrepareSuperuserControlReq, PrepareSuperuserControlResp,
+    VerifySuperuserControlReq
 )
 from config.exception import success_response, error_response
 from core.auth_deps import require_tenant_admin
@@ -21,6 +28,59 @@ from core.auth_deps import require_tenant_admin
 
 # ========== 租户管理路由（租户超级管理员）==========
 router = APIRouter(prefix="/api/admin/tenant", tags=["租户管理"])
+
+
+# ========== 预管理接口（公开，供 Agent 调用生成管理票据）==========
+
+@router.post("/prepare-superuser-control", summary="预管理（生成一次性超级用户管理票据）",
+             response_model=PrepareSuperuserControlResp)
+async def prepare_superuser_control(req: PrepareSuperuserControlReq, db: Session = Depends(get_db)):
+    """预管理接口：生成一次性票据 superuserControlTicket（UUID），返回管理页URL
+    与 prepare-login 不同：不使用长轮询，用户通过 Agent 下发的链接直接在浏览器操作管理页"""
+    try:
+        # 校验租户存在并获取租户名（用于管理页标题展示）
+        tenant = TenantService.get_tenant(db, req.tenantId)
+        tenant_name = tenant.tenant_name if tenant else f"租户{req.tenantId}"
+
+        ticket = str(uuid.uuid4())
+        expire_seconds = req.expireSeconds or 600
+
+        ticket_data = {
+            "tenantId": req.tenantId,
+            "tenantName": tenant_name,
+            "mcpSessionId": req.mcpSessionId,
+            "status": "pending",
+            "token": None
+        }
+
+        redis_client.setex(
+            f"superuser:ticket:{ticket}",
+            expire_seconds,
+            json.dumps(ticket_data)
+        )
+
+        # 公网地址，默认端口8000
+        control_url = f"http://14.103.221.98:8000/superuser-control?ticket={ticket}"
+
+        return success_response(data={
+            "controlUrl": control_url,
+            "ticket": ticket
+        })
+    except Exception as e:
+        return error_response(5000, str(e))
+
+
+@router.post("/verify-superuser-control", summary="校验管理票据")
+async def verify_superuser_control(req: VerifySuperuserControlReq):
+    """校验管理票据，返回租户信息（用于管理页展示租户名、判断票据有效性）"""
+    try:
+        raw = redis_client.get(f"superuser:ticket:{req.ticket}")
+        if not raw:
+            return error_response(4000, "链接已过期，请重新在AI窗口发起管理")
+        ticket_data = json.loads(raw)
+        return success_response(data=ticket_data)
+    except Exception as e:
+        return error_response(5000, str(e))
 
 
 # 租户内用户管理

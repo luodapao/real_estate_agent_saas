@@ -430,6 +430,12 @@ class UnitService:
                 'unit_code': u.unit_code,
                 'unit_name': u.unit_name,
                 'building_id': u.building_id,
+                'total_floors': u.total_floors,
+                'underground_floors': u.underground_floors or 0,
+                'start_floor': u.start_floor or 1,
+                'houses_per_floor': u.houses_per_floor,
+                'room_number_sequence': u.room_number_sequence,
+                'house_number_format': u.house_number_format,
                 'total_houses': u.total_houses,
                 'status': u.status,
                 'create_time': u.create_time.isoformat() if u.create_time else None
@@ -450,6 +456,12 @@ class UnitService:
             'unit_name': unit.unit_name,
             'building_id': unit.building_id,
             'building_name': building.building_name if building else None,
+            'total_floors': unit.total_floors,
+            'underground_floors': unit.underground_floors or 0,
+            'start_floor': unit.start_floor or 1,
+            'houses_per_floor': unit.houses_per_floor,
+            'room_number_sequence': unit.room_number_sequence,
+            'house_number_format': unit.house_number_format,
             'total_houses': unit.total_houses,
             'status': unit.status,
             'create_time': unit.create_time.isoformat() if unit.create_time else None,
@@ -664,6 +676,319 @@ class HouseService:
         
         return result
     
+    # ========== 参数化批量生成房源 ==========
+
+    def _parse_room_sequence(self, seq_str: str) -> List[str]:
+        """解析户号序列 '01,02,03,04' -> ['01','02','03','04']"""
+        if not seq_str:
+            return []
+        return [s.strip() for s in str(seq_str).split(',') if s.strip()]
+
+    def _format_house_code(self, fmt_template: str, building_code: str, unit_code: str,
+                           floor: int, room: str) -> str:
+        """按模板拼接房号"""
+        template = fmt_template or '{unit_code}-{floor}{room}'
+        # 楼层格式化：地下层用 'B1/B2' 风格或直接负数；默认直接数字
+        floor_str = str(floor)
+        if floor < 0:
+            # 地下层：格式化为 B1, B2...
+            floor_str = 'B' + str(abs(floor))
+        return template.format(
+            building_code=building_code or '',
+            unit_code=unit_code or '',
+            floor=floor_str,
+            room=room or ''
+        )
+
+    def generate_houses_preview(self, params: dict) -> dict:
+        """
+        参数化生成房源预览（不落库）。
+        支持两种调用方式：
+          A. 按单元列表显式传入（不同单元不同层数单独设置）
+          B. 按 building_id + 楼栋级参数（统一参数下批量生成所有已有单元）
+
+        params:
+          building_id: int                楼栋ID（必传）
+          units: list                     显式单元配置列表（推荐）
+            - unit_id: int                单元ID（若不传则用 unit_code 查已有单元）
+              unit_code: str              单元编号
+              total_floors: int           地上总层数
+              start_floor: int            起始楼层（默认1）
+              houses_per_floor: int      每层户数
+              room_number_sequence: str   每层户号序列 '01,02,03,04'
+              underground_floors: int    地下层数（默认0）
+              underground_houses_per_floor: int  地下每层户数（默认=houses_per_floor）
+              underground_room_sequence: str     地下户号序列（默认=地上序列）
+              underground_house_type: int        地下房源类型 2-储藏室 3-车位（默认2）
+              house_number_format: str   房号模板
+        或不传 units，直接用楼栋下已有单元 + 各自 SaleUnit 中存的生成参数
+
+        return:
+          { total_count, residential_count, underground_count, units: [..., houses:[{unit_code, floor, room, house_code, house_type}]] }
+        """
+        from core.exception import ValidationError
+
+        building_id = params.get('building_id')
+        if not building_id:
+            raise ValidationError('楼栋ID必填')
+
+        building = SaleBuildingDAO.get_building_by_id(self.db, building_id, self.tenant)
+        if not building:
+            raise BusinessError('楼栋不存在')
+
+        building_code = building.building_code
+        project_id = building.project_id
+
+        raw_units = params.get('units') or []
+
+        # 模式B：未传 units，从 DB 读取该楼栋已有单元，取其配置参数
+        if not raw_units:
+            db_units = SaleUnitDAO.get_units_by_building(self.db, building_id, self.tenant)
+            if not db_units:
+                raise ValidationError('楼栋下未创建任何单元，请先创建单元')
+            raw_units = [
+                {
+                    'unit_id': u.unit_id,
+                    'unit_code': u.unit_code,
+                    'total_floors': u.total_floors,
+                    'start_floor': u.start_floor or 1,
+                    'houses_per_floor': u.houses_per_floor,
+                    'room_number_sequence': u.room_number_sequence,
+                    'underground_floors': u.underground_floors or 0,
+                    'house_number_format': u.house_number_format,
+                }
+                for u in db_units
+            ]
+
+        total_count = 0
+        residential_count = 0
+        underground_count = 0
+        unit_results = []
+        all_conflicts = []
+
+        for idx, ru in enumerate(raw_units):
+            # 解析并校验单元
+            unit_id = ru.get('unit_id')
+            unit_code = ru.get('unit_code') or f'{idx+1}'
+
+            # 若传了 unit_id，尝试从 DB 读取真实 unit_code / unit_id
+            unit_obj = None
+            if unit_id:
+                unit_obj = SaleUnitDAO.get_unit_by_id(self.db, unit_id, self.tenant)
+                if unit_obj:
+                    unit_code = unit_obj.unit_code
+                else:
+                    unit_id = None
+            if not unit_id and unit_code:
+                # 按 unit_code 查
+                for u in SaleUnitDAO.get_units_by_building(self.db, building_id, self.tenant):
+                    if u.unit_code == unit_code:
+                        unit_obj = u
+                        unit_id = u.unit_id
+                        unit_code = u.unit_code
+                        break
+
+            total_floors = int(ru.get('total_floors') or 0)
+            start_floor = int(ru.get('start_floor') or 1)
+            houses_per_floor = int(ru.get('houses_per_floor') or 0)
+            room_sequence = self._parse_room_sequence(ru.get('room_number_sequence') or '')
+            underground_floors = int(ru.get('underground_floors') or 0)
+            underground_hpf = int(ru.get('underground_houses_per_floor') or houses_per_floor)
+            underground_seq_str = ru.get('underground_room_sequence') or ru.get('room_number_sequence') or ''
+            underground_seq = self._parse_room_sequence(underground_seq_str)
+            underground_type = int(ru.get('underground_house_type') or 2)  # 默认储藏室
+            fmt = ru.get('house_number_format') or (unit_obj.house_number_format if unit_obj else None)
+
+            # 校验参数
+            if total_floors <= 0 and underground_floors <= 0:
+                raise ValidationError(f'单元{unit_code}：地上总层数或地下层数至少需大于0')
+            if total_floors > 0:
+                if houses_per_floor <= 0 and not room_sequence:
+                    raise ValidationError(f'单元{unit_code}：必须填写每层户数或户号序列')
+                if not room_sequence:
+                    # 自动生成 01,02,03...
+                    room_sequence = [f'{i+1:02d}' for i in range(houses_per_floor)]
+                if houses_per_floor <= 0:
+                    houses_per_floor = len(room_sequence)
+                if houses_per_floor != len(room_sequence):
+                    raise ValidationError(f'单元{unit_code}：每层户数与户号序列长度不一致')
+            if underground_floors > 0:
+                if underground_hpf <= 0 and not underground_seq:
+                    raise ValidationError(f'单元{unit_code}地下层：必须填写地下每层户数或地下户号序列')
+                if not underground_seq:
+                    underground_seq = [f'{i+1:02d}' for i in range(underground_hpf)]
+                if underground_hpf <= 0:
+                    underground_hpf = len(underground_seq)
+                if underground_hpf != len(underground_seq):
+                    raise ValidationError(f'单元{unit_code}地下层：每层户数与户号序列长度不一致')
+
+            # 生成地上层
+            houses = []
+            for f in range(start_floor, start_floor + total_floors):
+                floor_no = f
+                for room in room_sequence:
+                    hcode = self._format_house_code(fmt, building_code, unit_code, floor_no, room)
+                    houses.append({
+                        'unit_id': unit_id,
+                        'unit_code': unit_code,
+                        'floor': floor_no,
+                        'room_no': room,
+                        'house_code': hcode,
+                        'house_name': hcode,
+                        'house_type': 1,
+                    })
+                    residential_count += 1
+                    total_count += 1
+                    # 预览时冲突检测（仅标记，不阻止）
+                    if unit_id and SaleHouseDAO.exists_house_by_code(
+                            self.db, self.tenant, project_id, building_id, unit_id, hcode):
+                        all_conflicts.append(hcode)
+
+            # 生成地下层（负层：-1,-2...）
+            for uf in range(1, underground_floors + 1):
+                floor_no = -uf
+                for room in underground_seq:
+                    hcode = self._format_house_code(fmt, building_code, unit_code, floor_no, room)
+                    houses.append({
+                        'unit_id': unit_id,
+                        'unit_code': unit_code,
+                        'floor': floor_no,
+                        'room_no': room,
+                        'house_code': hcode,
+                        'house_name': hcode,
+                        'house_type': underground_type,
+                    })
+                    underground_count += 1
+                    total_count += 1
+                    if unit_id and SaleHouseDAO.exists_house_by_code(
+                            self.db, self.tenant, project_id, building_id, unit_id, hcode):
+                        all_conflicts.append(hcode)
+
+            unit_results.append({
+                'unit_id': unit_id,
+                'unit_code': unit_code,
+                'total_floors': total_floors,
+                'underground_floors': underground_floors,
+                'houses_per_floor': houses_per_floor,
+                'room_sequence': room_sequence,
+                'underground_room_sequence': underground_seq,
+                'house_number_format': fmt,
+                'house_count': len([h for h in houses if h['house_type'] == 1]),
+                'underground_house_count': len([h for h in houses if h['house_type'] != 1]),
+                'houses': houses,
+            })
+
+        return {
+            'project_id': project_id,
+            'building_id': building_id,
+            'building_code': building_code,
+            'total_count': total_count,
+            'residential_count': residential_count,
+            'underground_count': underground_count,
+            'conflict_codes': all_conflicts,
+            'units': unit_results,
+        }
+
+    def batch_create_houses(self, params: dict, operator_id: int) -> dict:
+        """
+        确认预览结果后，批量落库。
+        params 字段同 generate_houses_preview，也可以直接传 preview 返回的 units 列表。
+        """
+        from core.exception import ValidationError
+        # 直接复用 preview 逻辑生成 houses（参数不变的情况下与用户预览完全一致）
+        preview = self.generate_houses_preview(params)
+        if preview['conflict_codes']:
+            raise ValidationError(
+                f'房号已存在：{", ".join(preview["conflict_codes"][:10])}'
+                + ('...' if len(preview['conflict_codes']) > 10 else '')
+            )
+        if preview['total_count'] <= 0:
+            raise ValidationError('没有可生成的房源')
+
+        project_id = preview['project_id']
+        building_id = preview['building_id']
+
+        # 汇总待落库的数据
+        house_mappings = []
+        now = datetime.now()
+        for unit_result in preview['units']:
+            unit_id = unit_result['unit_id']
+            if not unit_id:
+                raise ValidationError(f'单元{unit_result["unit_code"]}未关联有效单元ID，先创建单元再生成房源')
+            for h in unit_result['houses']:
+                house_mappings.append({
+                    'tenant': self.tenant,
+                    'project_id': project_id,
+                    'building_id': building_id,
+                    'unit_id': unit_id,
+                    'house_code': h['house_code'],
+                    'house_name': h.get('house_name') or h['house_code'],
+                    'floor': h['floor'],
+                    'room_no': h.get('room_no') or '',
+                    'house_type': h.get('house_type', 1),
+                    'house_status': 1,
+                    'status': 1,
+                    'is_del': 0,
+                    'create_time': now,
+                    'update_time': now,
+                    'version': 0,
+                })
+
+        # 先回写单元级生成参数（用于后续复现/展示）
+        for unit_result in preview['units']:
+            unit_id = unit_result['unit_id']
+            if unit_id:
+                unit_obj = SaleUnitDAO.get_unit_by_id(self.db, unit_id, self.tenant)
+                if unit_obj:
+                    SaleUnitDAO.update_unit(self.db, unit_obj, {
+                        'total_floors': unit_result.get('total_floors') or unit_obj.total_floors,
+                        'underground_floors': unit_result.get('underground_floors') or unit_obj.underground_floors or 0,
+                        'houses_per_floor': unit_result.get('houses_per_floor') or unit_obj.houses_per_floor,
+                        'room_number_sequence': ','.join(unit_result['room_sequence'])
+                            if unit_result['room_sequence'] else unit_obj.room_number_sequence,
+                        'house_number_format': unit_result.get('house_number_format') or unit_obj.house_number_format,
+                    })
+
+        # 批量插入
+        inserted = SaleHouseDAO.bulk_create_houses(self.db, house_mappings)
+
+        # 同步各单元 total_houses
+        touched_unit_ids = list({hm['unit_id'] for hm in house_mappings})
+        for uid in touched_unit_ids:
+            unit = SaleUnitDAO.get_unit_by_id(self.db, uid, self.tenant)
+            if unit:
+                cnt = len(SaleHouseDAO.get_houses_by_unit(self.db, uid, self.tenant))
+                SaleUnitDAO.update_unit(self.db, unit, {'total_houses': cnt})
+
+        # 同步楼栋 total_houses
+        building = SaleBuildingDAO.get_building_by_id(self.db, building_id, self.tenant)
+        if building:
+            bh = SaleHouseDAO.get_houses_by_building(self.db, building_id, self.tenant)
+            SaleBuildingDAO.update_building(self.db, building, {'total_houses': len(bh)})
+
+        # 同步楼盘 total_houses
+        project = SaleProjectDAO.get_project_by_id(self.db, project_id, self.tenant)
+        if project:
+            allh = SaleHouseDAO.get_houses_by_project(self.db, project_id, self.tenant, 0, 1000000)
+            SaleProjectDAO.update_project(self.db, project, {'total_houses': len(allh)})
+
+        # 操作日志
+        self._create_operation_log(
+            operator_id, "batch_create_houses",
+            f"批量生成房源：楼栋{building.building_code if building else building_id}，共{inserted}套",
+            True
+        )
+        self._clear_house_cache(project_id)
+
+        return {
+            'inserted_count': inserted,
+            'project_id': project_id,
+            'building_id': building_id,
+            'total_count': preview['total_count'],
+            'residential_count': preview['residential_count'],
+            'underground_count': preview['underground_count'],
+        }
+
     def update_house_status(self, house_id: int, new_status: int, 
                            operator_id: int, lock_user_id: Optional[int] = None) -> SaleHouse:
         """更新房源状态（生产级：状态流转校验 + 分布式锁）"""

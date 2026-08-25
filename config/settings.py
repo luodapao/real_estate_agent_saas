@@ -78,6 +78,11 @@ WHITE_LIST = [
     {'path': '/api/admin/refresh-token', 'methods': ['POST'], 'exact': True},
     {'path': '/api/admin/prepare-login', 'methods': ['POST'], 'exact': True},
     {'path': '/api/admin/wait-login', 'methods': ['POST'], 'exact': True},
+    # 超级用户管理票据（公开接口，供 Agent 调用，无长轮询）
+    {'path': '/api/admin/tenant/prepare-superuser-control', 'methods': ['POST'], 'exact': True},
+    {'path': '/api/admin/tenant/verify-superuser-control', 'methods': ['POST'], 'exact': True},
+    # 超级用户管理页（用户浏览器直接打开）
+    {'path': '/superuser-control', 'methods': ['GET', 'HEAD'], 'exact': True},
     # 平台超级用户创建（用于初始化账号）
     {'path': '/api/admin/platform/users', 'methods': ['POST'], 'exact': True},
     # 用户注册已移除，改为由平台超级管理员创建账号
