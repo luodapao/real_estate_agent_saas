@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>楼栋创建</title>
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+  <!-- Element Plus -->
+  <link rel="stylesheet" href="https://unpkg.com/element-plus@2.8.0/dist/index.css" />
+  <script src="https://unpkg.com/element-plus@2.8.0/dist/index.full.min.js"></script>
+  <script src="https://unpkg.com/@element-plus/icons-vue@2.3.1/dist/index.iife.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #app { min-height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: #f0f2f5;
+    }
+    /* 主色 #165DFF */
+    .el-button--primary { --el-color-primary: #165DFF; }
+    .el-radio-button__original:checked + .el-radio-button__inner {
+      background: #165DFF; border-color: #165DFF; box-shadow: -1px 0 0 0 #165DFF;
+    }
+    .page-header {
+      background: linear-gradient(135deg, #165DFF 0%, #0E42D2 100%);
+      color: #fff; padding: 18px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 10px rgba(22,93,255,0.18);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .page-header .title { font-size: 18px; font-weight: 600; }
+    .page-header .sub { font-size: 12px; opacity: .85; margin-top: 2px; }
+    .page-header .user-box { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .content-wrap { padding: 20px 28px; max-width: 1100px; margin: 0 auto; }
+    .info-card { background: #fff; border-radius: 10px; padding: 24px 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .mode-switch { margin-bottom: 20px; }
+    .login-center { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+    .login-card {
+      width: 100%; max-width: 420px; background: #fff; border-radius: 16px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.15); padding: 36px 32px;
+    }
+    .login-card h2 { text-align: center; margin-bottom: 6px; color: #1f2937; }
+    .login-card .desc { text-align: center; color: #6b7280; font-size: 13px; margin-bottom: 22px; }
+    .footer { text-align: center; padding: 20px; color: #9ca3af; font-size: 12px; }
+    .empty-tip { text-align: center; padding: 40px 0; color: #9ca3af; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- ============ 登录视图（无 token 时） ============ -->
+    <div v-if="currentView === 'login'" class="login-center">
+      <div class="login-card">
+        <h2>楼栋创建 - 登录</h2>
+        <div class="desc">请使用账号登录后进行楼栋创建</div>
+        <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules" label-position="top" @submit.prevent>
+          <el-form-item label="登录账号" prop="account">
+            <el-input v-model="loginForm.account" size="large" placeholder="请输入账号" :prefix-icon="User" clearable />
+          </el-form-item>
+          <el-form-item label="登录密码" prop="password">
+            <el-input v-model="loginForm.password" type="password" size="large" placeholder="请输入密码"
+                      :prefix-icon="Lock" show-password @keyup.enter="onLogin" />
+          </el-form-item>
+          <el-button type="primary" size="large" style="width:100%" :loading="loginLoading" @click="onLogin">登录</el-button>
+        </el-form>
+        <div v-if="ticketInvalid" style="margin-top:14px;color:#c2410c;font-size:12px;text-align:center;">
+          创建链接已过期，请在 AI 窗口重新发起楼栋创建。
+        </div>
+      </div>
+    </div>
+
+    <template v-else>
+      <!-- ============ 顶部标题 ============ -->
+      <div class="page-header">
+        <div>
+          <div class="title">楼栋创建</div>
+          <div class="sub">租户ID：{{ tenantId || '-' }} · 当前登录：{{ currentUserInfo.name || '-' }}</div>
+        </div>
+        <div class="user-box">
+          <el-button size="small" plain @click="logout">退出登录</el-button>
+        </div>
+      </div>
+
+      <div class="content-wrap">
+        <div class="info-card">
+          <!-- ============ 模式切换 ============ -->
+          <div class="mode-switch">
+            <el-radio-group v-model="mode" @change="onModeChange">
+              <el-radio-button label="manual">手动新增单栋</el-radio-button>
+              <el-radio-button label="batch">批量自动生成楼栋</el-radio-button>
+            </el-radio-group>
+          </div>
+
+          <!-- ============ 公共：归属楼盘 ============ -->
+          <el-form label-width="120px" style="max-width:620px;">
+            <el-form-item label="归属楼盘" required>
+              <el-select v-model="projectId" placeholder="请选择楼盘" filterable
+                         style="width:100%" @change="onProjectChange">
+                <el-option v-for="p in projectList" :key="p.project_id"
+                           :label="p.project_name" :value="p.project_id" />
+              </el-select>
+            </el-form-item>
+          </el-form>
+
+          <!-- ============ 手动模式 ============ -->
+          <el-form v-if="mode === 'manual'" ref="manualFormRef" :model="manualForm" :rules="manualRules"
+                   label-width="120px" style="max-width:620px;">
+            <el-form-item label="楼栋编号" prop="building_code">
+              <el-input v-model="manualForm.building_code" placeholder="如 1" />
+            </el-form-item>
+            <el-form-item label="楼栋名称" prop="building_name">
+              <el-input v-model="manualForm.building_name" placeholder="如 1栋" />
+            </el-form-item>
+            <el-form-item label="单元数量" prop="total_units">
+              <el-input-number v-model="manualForm.total_units" :min="0" :max="200" style="width:100%" />
+            </el-form-item>
+            <el-form-item label="总层数" prop="total_floors">
+              <el-input-number v-model="manualForm.total_floors" :min="1" :max="200" style="width:100%" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="manualLoading" @click="onCreateBuilding">保存楼栋</el-button>
+              <el-button @click="resetManualForm">重置</el-button>
+            </el-form-item>
+          </el-form>
+
+          <!-- ============ 批量模式 ============ -->
+          <el-form v-else ref="batchFormRef" :model="batchForm" :rules="batchRules"
+                   label-width="120px" style="max-width:620px;">
+            <el-form-item label="起始楼栋编号" prop="start_building_no">
+              <el-input v-model="batchForm.start_building_no" placeholder="如 1，将自增进而生成 2、3..." />
+            </el-form-item>
+            <el-form-item label="生成数量" prop="generate_count">
+              <el-input-number v-model="batchForm.generate_count" :min="1" :max="50" style="width:100%" />
+              <div style="font-size:12px;color:#9ca3af;margin-top:4px;">单次最多生成50栋</div>
+            </el-form-item>
+            <el-form-item label="每栋单元数" prop="units_per_building">
+              <el-input-number v-model="batchForm.units_per_building" :min="0" :max="50" style="width:100%" />
+            </el-form-item>
+            <el-form-item label="每栋总层数" prop="total_floors">
+              <el-input-number v-model="batchForm.total_floors" :min="1" :max="200" style="width:100%" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :loading="previewLoading" @click="onGeneratePreview">生成预览</el-button>
+              <el-button @click="resetBatchForm">重置</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+      </div>
+    </template>
+
+    <!-- ============ 批量预览弹窗 ============ -->
+    <el-dialog v-model="previewVisible" title="批量生成楼栋预览" width="780px" :close-on-click-modal="false">
+      <div v-if="conflictCodes.length" style="margin-bottom:12px;color:#c2410c;font-size:13px;">
+        以下编号已存在：{{ conflictCodes.join('、') }}，保存时将被后端拒绝，请修改后再确认。
+      </div>
+      <el-table :data="previewList" border stripe max-height="420">
+        <el-table-column type="index" label="#" width="55" />
+        <el-table-column prop="building_code" label="楼栋编号" width="140" />
+        <el-table-column label="楼栋名称" min-width="180">
+          <template #default="{ row }">
+            <el-input v-model="row.building_name" size="small" />
+          </template>
+        </el-table-column>
+        <el-table-column prop="total_floors" label="总层数" width="90" />
+        <el-table-column prop="total_units" label="单元数" width="90" />
+      </el-table>
+      <div v-if="previewList.length === 0" class="empty-tip">暂无预览数据</div>
+      <template #footer>
+        <el-button @click="onCancelPreview">取消</el-button>
+        <el-button type="primary" :loading="batchSaveLoading" @click="onBatchSave">确认批量保存</el-button>
+      </template>
+    </el-dialog>
+
+    <div class="footer">© {{ year }} 房地产 Agent SaaS 管理平台 · 楼栋创建</div>
+  </div>
+
+  <script>
+    const { createApp, ref, reactive, onMounted, markRaw } = Vue;
+    const { ElMessage, ElMessageBox } = ElementPlus;
+    const { User, Lock, Plus } = ElementPlusIconsVue;
+
+    const app = createApp({
+      setup() {
+        // ===== 票据与租户 =====
+        const ticket = ref('');
+        const tenantId = ref(null);
+        const presetProjectId = ref(null);
+        const ticketInvalid = ref(false);
+
+        // ===== 登录态 =====
+        const token = ref(localStorage.getItem('project_create_token') || '');
+        const currentUserInfo = reactive({ name: '', user_id: '' });
+        const currentView = ref('login');
+
+        // ===== 楼盘 =====
+        const projectList = ref([]);
+        const projectId = ref(null);
+        const projectLoading = ref(false);
+
+        // ===== 模式 =====
+        const mode = ref('manual');
+
+        // ===== 手动表单 =====
+        const manualFormRef = ref(null);
+        const manualForm = reactive({ building_code:'', building_name:'', total_units:1, total_floors:1 });
+        const manualLoading = ref(false);
+        const manualRules = {
+          building_code: [{ required: true, message: '请输入楼栋编号', trigger: 'blur' }],
+          building_name: [{ required: true, message: '请输入楼栋名称', trigger: 'blur' }],
+          total_floors: [{ required: true, message: '请输入总层数', trigger: 'blur' }]
+        };
+
+        // ===== 批量表单 =====
+        const batchFormRef = ref(null);
+        const batchForm = reactive({ start_building_no:'1', generate_count:1, units_per_building:1, total_floors:1 });
+        const previewLoading = ref(false);
+        const previewVisible = ref(false);
+        const previewList = ref([]);
+        const conflictCodes = ref([]);
+        const batchSaveLoading = ref(false);
+        const batchRules = {
+          start_building_no: [{ required: true, message: '请输入起始楼栋编号', trigger: 'blur' }],
+          generate_count: [{ required: true, message: '请输入生成数量', trigger: 'blur' }],
+          total_floors: [{ required: true, message: '请输入每栋总层数', trigger: 'blur' }]
+        };
+
+        // ===== 登录表单 =====
+        const loginFormRef = ref(null);
+        const loginForm = reactive({ account:'', password:'' });
+        const loginLoading = ref(false);
+        const loginRules = {
+          account: [{ required: true, message: '请输入登录账号', trigger: 'blur' }],
+          password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+        };
+
+        const year = new Date().getFullYear();
+
+        // ===== 工具方法 =====
+        function authHeaders() {
+          return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token.value };
+        }
+        async function request(url, options = {}) {
+          const resp = await fetch(url, { ...options, headers: { ...authHeaders(), ...(options.headers||{}) } });
+          const json = await resp.json();
+          return json;
+        }
+
+        // ===== 票据校验 =====
+        async function verifyTicket() {
+          if (!ticket.value) { ticketInvalid.value = true; return; }
+          try {
+            const json = await fetch('/api/sale/project/verify-project-create', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ticket: ticket.value })
+            }).then(r => r.json());
+            if (json && json.code === 0 && json.data) {
+              tenantId.value = json.data.tenantId;
+              presetProjectId.value = json.data.projectId || null;
+            } else {
+              ticketInvalid.value = true;
+            }
+          } catch (e) {
+            ticketInvalid.value = true;
+          }
+        }
+
+        // ===== 登录 =====
+        async function onLogin() {
+          if (!loginFormRef.value) return;
+          try { await loginFormRef.value.validate(); } catch (e) { return; }
+          loginLoading.value = true;
+          try {
+            const payload = { account: loginForm.account, password: loginForm.password };
+            const json = await fetch('/api/admin/login', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            }).then(r => r.json());
+            if (json && (json.code === 0 || json.code === 200) && json.data) {
+              token.value = json.data.access_token;
+              localStorage.setItem('project_create_token', token.value);
+              currentUserInfo.name = (json.data.user && json.data.user.name) || '';
+              currentUserInfo.user_id = (json.data.user && json.data.user.user_id) || '';
+              currentView.value = 'main';
+              ElMessage.success('登录成功');
+              await loadProjectList();
+              if (presetProjectId.value) projectId.value = presetProjectId.value;
+            } else {
+              ElMessage.error((json && json.message) || '登录失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误：' + (e.message || e));
+          } finally {
+            loginLoading.value = false;
+          }
+        }
+
+        function logout() {
+          localStorage.removeItem('project_create_token');
+          token.value = '';
+          currentView.value = 'login';
+          projectList.value = [];
+          projectId.value = null;
+        }
+
+        // ===== 楼盘列表（权限过滤由后端按 tenant 控制） =====
+        async function loadProjectList() {
+          projectLoading.value = true;
+          try {
+            const json = await request('/api/sale/project/list?page=1&page_size=200');
+            if (json && json.code === 0 && json.data) {
+              projectList.value = json.data.data || json.data.list || [];
+            } else {
+              projectList.value = [];
+            }
+          } catch (e) {
+            ElMessage.error('楼盘列表加载失败');
+          } finally {
+            projectLoading.value = false;
+          }
+        }
+
+        function onProjectChange() {
+          // 切换楼盘：清空与楼栋相关的临时数据
+          previewList.value = [];
+          conflictCodes.value = [];
+        }
+
+        function onModeChange() {
+          previewList.value = [];
+          conflictCodes.value = [];
+          previewVisible.value = false;
+        }
+
+        function resetManualForm() {
+          Object.assign(manualForm, { building_code:'', building_name:'', total_units:1, total_floors:1 });
+        }
+        function resetBatchForm() {
+          Object.assign(batchForm, { start_building_no:'1', generate_count:1, units_per_building:1, total_floors:1 });
+          previewList.value = [];
+          conflictCodes.value = [];
+        }
+
+        // ===== 手动创建楼栋 =====
+        async function onCreateBuilding() {
+          if (!projectId.value) { ElMessage.warning('请先选择归属楼盘'); return; }
+          if (!manualFormRef.value) return;
+          try { await manualFormRef.value.validate(); } catch (e) { return; }
+          manualLoading.value = true;
+          try {
+            const payload = {
+              project_id: projectId.value,
+              building_code: manualForm.building_code,
+              building_name: manualForm.building_name,
+              total_floors: manualForm.total_floors,
+              total_units: manualForm.total_units
+            };
+            const json = await request('/api/sale/project/building/create', {
+              method: 'POST', body: JSON.stringify(payload)
+            });
+            if (json && json.code === 0) {
+              ElMessage.success('楼栋创建成功');
+              resetManualForm();
+            } else {
+              ElMessage.error((json && json.message) || '创建失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          } finally {
+            manualLoading.value = false;
+          }
+        }
+
+        // ===== 批量预览 =====
+        async function onGeneratePreview() {
+          if (!projectId.value) { ElMessage.warning('请先选择归属楼盘'); return; }
+          if (!batchFormRef.value) return;
+          try { await batchFormRef.value.validate(); } catch (e) { return; }
+          previewLoading.value = true;
+          try {
+            const payload = {
+              project_id: projectId.value,
+              start_building_no: batchForm.start_building_no,
+              generate_count: batchForm.generate_count,
+              units_per_building: batchForm.units_per_building,
+              total_floors: batchForm.total_floors
+            };
+            const json = await request('/api/sale/project/building/generate-preview', {
+              method: 'POST', body: JSON.stringify(payload)
+            });
+            if (json && json.code === 0 && json.data) {
+              previewList.value = (json.data.buildings || []).map(b => ({ ...b }));
+              conflictCodes.value = json.data.conflict_codes || [];
+              previewVisible.value = true;
+            } else {
+              ElMessage.error((json && json.message) || '预览生成失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          } finally {
+            previewLoading.value = false;
+          }
+        }
+
+        function onCancelPreview() {
+          previewVisible.value = false;
+          previewList.value = [];
+          conflictCodes.value = [];
+        }
+
+        // ===== 批量保存 =====
+        async function onBatchSave() {
+          if (!previewList.value.length) { ElMessage.warning('没有可保存的楼栋'); return; }
+          batchSaveLoading.value = true;
+          try {
+            const payload = {
+              project_id: projectId.value,
+              buildings: previewList.value.map(b => ({
+                building_code: b.building_code,
+                building_name: b.building_name,
+                total_floors: b.total_floors,
+                total_units: b.total_units
+              }))
+            };
+            const json = await request('/api/sale/project/building/batch-create', {
+              method: 'POST', body: JSON.stringify(payload)
+            });
+            if (json && json.code === 0) {
+              ElMessage.success((json.message) || '批量创建成功');
+              previewVisible.value = false;
+              previewList.value = [];
+              conflictCodes.value = [];
+            } else {
+              ElMessage.error((json && json.message) || '保存失败');
+            }
+          } catch (e) {
+            ElMessage.error('网络错误');
+          } finally {
+            batchSaveLoading.value = false;
+          }
+        }
+
+        // ===== 初始化 =====
+        onMounted(async () => {
+          const usp = new URLSearchParams(window.location.search);
+          ticket.value = (usp.get('ticket') || '').trim();
+          await verifyTicket();
+          if (token.value && !ticketInvalid.value) {
+            // 已有 token，校验有效性
+            try {
+              const probe = await request('/api/sale/project/list?page=1&page_size=1');
+              if (probe && probe.code === 0) {
+                currentView.value = 'main';
+                await loadProjectList();
+                if (presetProjectId.value) projectId.value = presetProjectId.value;
+              } else {
+                localStorage.removeItem('project_create_token');
+                token.value = '';
+                currentView.value = 'login';
+              }
+            } catch (e) {
+              currentView.value = 'login';
+            }
+          }
+        });
+
+        return {
+          ticket, tenantId, ticketInvalid,
+          token, currentUserInfo, currentView,
+          projectList, projectId, projectLoading, onProjectChange,
+          mode, onModeChange,
+          manualFormRef, manualForm, manualRules, manualLoading, onCreateBuilding, resetManualForm,
+          batchFormRef, batchForm, batchRules, previewLoading, onGeneratePreview, resetBatchForm,
+          previewVisible, previewList, conflictCodes, batchSaveLoading, onCancelPreview, onBatchSave,
+          loginFormRef, loginForm, loginRules, loginLoading, onLogin, logout,
+          year,
+          User: markRaw(User), Lock: markRaw(Lock), Plus: markRaw(Plus)
+        };
+      }
+    });
+
+    app.use(ElementPlus);
+    for (const [k, v] of Object.entries(ElementPlusIconsVue)) {
+      app.component(k, v);
+    }
+    app.mount('#app');
+  </script>
+</body>
+</html>

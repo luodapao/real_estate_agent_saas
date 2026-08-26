@@ -83,6 +83,11 @@ WHITE_LIST = [
     {'path': '/api/admin/tenant/verify-superuser-control', 'methods': ['POST'], 'exact': True},
     # 超级用户管理页（用户浏览器直接打开）
     {'path': '/superuser-control', 'methods': ['GET', 'HEAD'], 'exact': True},
+    # 楼栋创建票据（公开接口，供 Agent 调用，无长轮询）
+    {'path': '/api/sale/project/prepare-project-create', 'methods': ['POST'], 'exact': True},
+    {'path': '/api/sale/project/verify-project-create', 'methods': ['POST'], 'exact': True},
+    # 楼栋创建页（用户浏览器直接打开）
+    {'path': '/project-create', 'methods': ['GET', 'HEAD'], 'exact': True},
     # 平台超级用户创建（用于初始化账号）
     {'path': '/api/admin/platform/users', 'methods': ['POST'], 'exact': True},
     # 用户注册已移除，改为由平台超级管理员创建账号

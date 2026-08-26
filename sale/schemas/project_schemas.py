@@ -3,7 +3,8 @@
 用于API接口的请求和响应数据验证
 """
 
-from pydantic import BaseModel, Field\nfrom common.schemas.response import ORMBaseModel
+from pydantic import BaseModel, Field
+from common.schemas.response import ORMBaseModel
 from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
@@ -212,6 +213,27 @@ class HouseControlPanelResponse(ORMBaseModel):
     reserved_count: int
     building_stats: List[dict]
     room_type_stats: List[dict]
+
+
+# ========== 楼栋创建票据模型 ==========
+
+class PrepareProjectCreateReq(BaseModel):
+    """楼栋创建预请求模型（生成一次性创建票据，无长轮询）"""
+    tenantId: int = Field(..., description="租户ID")
+    mcpSessionId: Optional[str] = Field(None, description="MCP会话ID", max_length=100)
+    projectId: Optional[int] = Field(None, description="预选楼盘ID（可选，用于页面默认选中）")
+    expireSeconds: Optional[int] = Field(600, description="票据过期时间（秒），默认600s")
+
+
+class PrepareProjectCreateResp(BaseModel):
+    """楼栋创建预响应模型"""
+    controlUrl: str = Field(..., description="楼栋创建页URL")
+    ticket: str = Field(..., description="一次性创建票据")
+
+
+class VerifyProjectCreateReq(BaseModel):
+    """校验楼栋创建票据请求模型"""
+    ticket: str = Field(..., description="创建票据", max_length=100)
 
 
 # ========== 项目规则管理模型 ==========

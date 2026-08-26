@@ -255,6 +255,166 @@ class BuildingService:
         
         return building
     
+    def generate_buildings_preview(self, params: dict) -> dict:
+        """
+        参数化楼栋批量生成预览（不落库）。
+        params:
+          project_id: int          楼盘ID（必填）
+          start_building_no: str   起始楼栋编号（数字字符串，如 "1"）
+          generate_count: int      生成数量（1~50）
+          units_per_building: int  每栋单元数
+          total_floors: int        每栋总层数
+          building_code_format: str 可选，编号模板（默认数字自增）
+        return:
+          { project_id, total_count, buildings:[{building_code, building_name, total_floors, total_units}], conflict_codes }
+        """
+        from core.exception import ValidationError
+
+        project_id = params.get('project_id')
+        if not project_id:
+            raise ValidationError('楼盘ID必填')
+        project = SaleProjectDAO.get_project_by_id(self.db, project_id, self.tenant)
+        if not project:
+            raise BusinessError('楼盘不存在')
+
+        start_no = params.get('start_building_no')
+        if start_no in (None, ''):
+            raise ValidationError('起始楼栋编号必填')
+        count = int(params.get('generate_count') or 0)
+        units_per = int(params.get('units_per_building') or 0)
+        floors = int(params.get('total_floors') or 0)
+
+        if count <= 0:
+            raise ValidationError('生成数量必须大于0')
+        if count > 50:
+            raise ValidationError('单次批量生成不超过50栋')
+        if floors <= 0:
+            raise ValidationError('每栋总层数必须大于0')
+        if units_per < 0:
+            raise ValidationError('每栋单元数不能为负')
+
+        # 起始编号：支持纯数字自增；非数字时按 "原值-序号" 递增
+        try:
+            start_int = int(start_no)
+            numeric = True
+        except (TypeError, ValueError):
+            start_int = None
+            numeric = False
+
+        # 一次性查出楼盘下已有楼栋编号用于冲突检测
+        existing_codes = {
+            b.building_code for b in
+            SaleBuildingDAO.get_buildings_by_project(self.db, project_id, self.tenant)
+        }
+
+        buildings = []
+        conflict_codes = []
+        for i in range(count):
+            if numeric:
+                code = str(start_int + i)
+            else:
+                code = f'{start_no}-{i + 1}'
+            name = f'{code}栋'
+            if code in existing_codes:
+                conflict_codes.append(code)
+            buildings.append({
+                'building_code': code,
+                'building_name': name,
+                'total_floors': floors,
+                'total_units': units_per,
+            })
+
+        return {
+            'project_id': project_id,
+            'total_count': count,
+            'buildings': buildings,
+            'conflict_codes': conflict_codes,
+        }
+
+    def batch_create_buildings(self, params: dict, operator_id: int) -> dict:
+        """
+        确认预览结果后批量落库（事务一致）。
+        params:
+          project_id: int 必填
+          buildings: list 前端编辑后的预览列表（推荐传入），元素含
+                     building_code / building_name / total_floors / total_units
+          若不传 buildings，则按批量参数（start_building_no 等）重新生成。
+        """
+        from core.exception import ValidationError
+
+        project_id = params.get('project_id')
+        if not project_id:
+            raise ValidationError('楼盘ID必填')
+        project = SaleProjectDAO.get_project_by_id(self.db, project_id, self.tenant)
+        if not project:
+            raise BusinessError('楼盘不存在')
+
+        override = params.get('buildings')
+        if override:
+            buildings = []
+            for b in override:
+                code = (b.get('building_code') or '').strip()
+                name = (b.get('building_name') or code).strip()
+                if not code:
+                    raise ValidationError('楼栋编号不能为空')
+                buildings.append({
+                    'building_code': code,
+                    'building_name': name,
+                    'total_floors': int(b.get('total_floors') or 0),
+                    'total_units': int(b.get('total_units') or 0),
+                })
+            existing_codes = {
+                b.building_code for b in
+                SaleBuildingDAO.get_buildings_by_project(self.db, project_id, self.tenant)
+            }
+            conflict_codes = [b['building_code'] for b in buildings if b['building_code'] in existing_codes]
+        else:
+            preview = self.generate_buildings_preview(params)
+            buildings = preview['buildings']
+            conflict_codes = preview['conflict_codes']
+
+        if conflict_codes:
+            raise ValidationError(
+                '楼栋编号已存在：' + ', '.join(conflict_codes[:10])
+                + ('...' if len(conflict_codes) > 10 else '')
+            )
+        if not buildings:
+            raise ValidationError('没有可创建的楼栋')
+
+        now = datetime.now()
+        mappings = [{
+            'tenant': self.tenant,
+            'project_id': project_id,
+            'building_code': b['building_code'],
+            'building_name': b['building_name'],
+            'total_floors': b['total_floors'],
+            'total_units': b['total_units'],
+            'total_houses': 0,
+            'status': 1,
+            'is_del': 0,
+            'create_time': now,
+            'update_time': now,
+            'version': 0,
+        } for b in buildings]
+
+        inserted = SaleBuildingDAO.bulk_create_buildings(self.db, mappings)
+
+        # 同步楼盘楼栋总数
+        cnt = len(SaleBuildingDAO.get_buildings_by_project(self.db, project_id, self.tenant))
+        SaleProjectDAO.update_project(self.db, project, {'total_buildings': cnt})
+
+        self._create_operation_log(
+            operator_id, 'batch_create_buildings',
+            f'批量创建楼栋：楼盘{project.project_code if project else project_id}，共{inserted}栋',
+            True
+        )
+        self._clear_building_cache(project_id)
+
+        return {
+            'inserted_count': inserted,
+            'project_id': project_id,
+        }
+
     def get_building_tree(self, project_id: int) -> List[dict]:
         """获取楼栋树形结构（生产级：Redis缓存预热）"""
         cache_key = f"building:tree:{self.tenant}:{project_id}"

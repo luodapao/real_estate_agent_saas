@@ -110,6 +110,14 @@ def create_app() -> FastAPI:
             return FileResponse(control_html)
         return JSONResponse(status_code=404, content={"code": 404, "message": "管理页未找到"})
 
+    # ========== 楼栋创建页快捷入口：/project-create 直接返回创建页 ==========
+    @app.get("/project-create", include_in_schema=False)
+    async def project_create_page(ticket: str = None):
+        create_html = os.path.join(frontend_dir, "project-create.html")
+        if os.path.isfile(create_html):
+            return FileResponse(create_html)
+        return JSONResponse(status_code=404, content={"code": 404, "message": "楼栋创建页未找到"})
+
     return app
 
 def init_app(app: FastAPI):

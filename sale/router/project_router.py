@@ -2,18 +2,73 @@
 房地产SaaS销售管理系统 - 楼盘销控模块路由
 """
 
+import uuid
+import json
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import Optional
 
 from core.db_base import get_sale_db as get_db
+from core.redis_base import redis_client
 from core.auth_middleware import get_current_user
 from config.exception import success_response, error_response
 
 from sale.service.project_service import ProjectService, BuildingService, UnitService, HouseService
 from sale.dao.sale_dao import SaleProjectRuleDAO
+from sale.schemas.project_schemas import (
+    PrepareProjectCreateReq, PrepareProjectCreateResp,
+    VerifyProjectCreateReq
+)
 
 router = APIRouter(prefix="/project", tags=["楼盘销控"])
+
+
+# ========== 预创建接口（公开，供 Agent 调用生成楼栋创建票据）==========
+
+@router.post("/prepare-project-create", summary="预创建楼栋（生成一次性票据）",
+             response_model=PrepareProjectCreateResp)
+async def prepare_project_create(req: PrepareProjectCreateReq, db: Session = Depends(get_db)):
+    """预创建接口：生成一次性票据 projectCreateTicket（UUID），返回楼栋创建页URL
+    与 prepare-login 不同：不使用长轮询，用户通过 Agent 下发的链接直接在浏览器操作创建页"""
+    try:
+        ticket = str(uuid.uuid4())
+        expire_seconds = req.expireSeconds or 600
+
+        ticket_data = {
+            "tenantId": req.tenantId,
+            "projectId": req.projectId,
+            "mcpSessionId": req.mcpSessionId,
+            "status": "pending"
+        }
+
+        redis_client.setex(
+            f"project:ticket:{ticket}",
+            expire_seconds,
+            json.dumps(ticket_data)
+        )
+
+        # 公网地址，默认端口8000
+        control_url = f"http://14.103.221.98:8000/project-create?ticket={ticket}"
+
+        return success_response(data={
+            "controlUrl": control_url,
+            "ticket": ticket
+        })
+    except Exception as e:
+        return error_response(5000, str(e))
+
+
+@router.post("/verify-project-create", summary="校验楼栋创建票据")
+async def verify_project_create(req: VerifyProjectCreateReq):
+    """校验创建票据，返回票据数据（用于创建页判断票据有效性、预选楼盘）"""
+    try:
+        raw = redis_client.get(f"project:ticket:{req.ticket}")
+        if not raw:
+            return error_response(4000, "链接已过期，请重新在AI窗口发起楼栋创建")
+        ticket_data = json.loads(raw)
+        return success_response(data=ticket_data)
+    except Exception as e:
+        return error_response(5000, str(e))
 
 
 # ========== 楼盘管理接口 ==========
@@ -126,6 +181,53 @@ async def create_building(
             "building_id": building.building_id,
             "building_name": building.building_name
         }, message="楼栋创建成功")
+    except Exception as e:
+        return error_response(-1, str(e))
+
+
+@router.post("/building/generate-preview")
+async def generate_buildings_preview(
+    params: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    参数化楼栋批量生成（预览）—— 不落库。
+    前端先调用此接口展示待生成的楼栋，用户在弹窗编辑楼栋名称后确认，
+    再调用 /building/batch-create。
+    params:
+      project_id: 楼盘ID（必填）
+      start_building_no: 起始楼栋编号（数字字符串，如 "1"）
+      generate_count: 生成数量（1~50）
+      units_per_building: 每栋单元数
+      total_floors: 每栋总层数
+    """
+    try:
+        service = BuildingService(db, current_user['tenant'])
+        result = service.generate_buildings_preview(params)
+        return success_response(data=result)
+    except Exception as e:
+        return error_response(-1, str(e))
+
+
+@router.post("/building/batch-create")
+async def batch_create_buildings(
+    params: dict,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
+):
+    """
+    批量确认楼栋落库（事务一致：全部成功/全部回滚）。
+    params:
+      project_id: 楼盘ID（必填）
+      buildings: 前端编辑后的预览列表（推荐传入），元素含
+                 building_code / building_name / total_floors / total_units
+      若不传 buildings，则按批量参数（start_building_no 等）重新生成。
+    """
+    try:
+        service = BuildingService(db, current_user['tenant'])
+        result = service.batch_create_buildings(params, current_user['user_id'])
+        return success_response(data=result, message=f"楼栋批量创建成功（{result.get('inserted_count',0)}栋）")
     except Exception as e:
         return error_response(-1, str(e))
 

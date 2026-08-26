@@ -118,6 +118,15 @@ class SaleBuildingDAO:
         db.commit()
         db.refresh(building)
         return building
+
+    @staticmethod
+    def bulk_create_buildings(db: Session, building_list: List[dict]) -> int:
+        """批量创建楼栋（bulk_insert，事务一致：全部成功/全部回滚）"""
+        if not building_list:
+            return 0
+        db.bulk_insert_mappings(SaleBuilding, building_list)
+        db.commit()
+        return len(building_list)
     
     @staticmethod
     def get_building_by_id(db: Session, building_id: int, tenant: str) -> Optional[SaleBuilding]:
